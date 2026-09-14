@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from threading import Lock
 from typing import Annotated
 from uuid import uuid4
@@ -21,6 +21,7 @@ app.add_middleware(
 UserId = Annotated[str, Header(alias="X-User-Id")]
 ROOM_ID = "evening-breeze"
 MAX_ROOM_MEMBERS = 20
+CHINA_TIMEZONE = timezone(timedelta(hours=8))
 
 
 class Member(BaseModel):
@@ -94,8 +95,8 @@ TRACK = Track(
     next_dj="Lin", skip_votes=2, votes_needed=5,
 )
 STITCHES: list[Stitch] = [
-    Stitch(id="stitch-1", author_id="member-he", author="阿禾", initials="禾", color="#5f8e7d", content="图书馆今晚很安静，适合把最后两章收尾。", created_at=datetime(2026, 9, 14, 21, 6, tzinfo=timezone.utc)),
-    Stitch(id="stitch-2", author_id="member-rain", author="小雨", initials="雨", color="#ef7f5a", content="刚做完一套题，先休息十分钟。你们也加油 🧵", created_at=datetime(2026, 9, 14, 20, 42, tzinfo=timezone.utc)),
+    Stitch(id="stitch-1", author_id="member-he", author="阿禾", initials="禾", color="#5f8e7d", content="图书馆今晚很安静，适合把最后两章收尾。", created_at=datetime(2026, 9, 14, 21, 6, tzinfo=CHINA_TIMEZONE)),
+    Stitch(id="stitch-2", author_id="member-rain", author="小雨", initials="雨", color="#ef7f5a", content="刚做完一套题，先休息十分钟。你们也加油 🧵", created_at=datetime(2026, 9, 14, 20, 42, tzinfo=CHINA_TIMEZONE)),
 ]
 FOCUS_SESSIONS: dict[str, FocusSession] = {}
 STATE_LOCK = Lock()

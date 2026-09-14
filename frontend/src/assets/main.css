@@ -12,6 +12,7 @@
 .room-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--moss); box-shadow: 0 0 0 5px rgba(88,114,102,.1); }
 .member-count { color: var(--muted); padding-left: 9px; border-left: 1px solid var(--line); font-weight: 400; }
 .avatar { justify-self: end; width: 36px; height: 36px; border: 1px solid rgba(147,97,116,.2); border-radius: 50%; background: #eadde3; color: #704f5e; font-size: .82rem; cursor: pointer; }
+.connection-note { position: fixed; top: 82px; left: 50%; z-index: 20; max-width: calc(100% - 32px); margin: 0; padding: 9px 14px; border: 1px solid rgba(185,86,61,.15); border-radius: 999px; color: #7b4d40; background: rgba(255,249,239,.94); box-shadow: 0 8px 24px rgba(72,51,43,.1); font-size: .75rem; transform: translateX(-50%); }
 
 .workspace { width: min(1220px, calc(100% - 40px)); margin: 0 auto; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(320px, .78fr); gap: 26px; padding: 38px 0 52px; }
 .loom-panel, .radio-card, .stitch-card { border: 1px solid var(--line); box-shadow: var(--shadow); }
@@ -53,6 +54,7 @@ h2 { margin-bottom: 0; font-size: 1.27rem; }
 .focus-action { margin-top: 28px; text-align: center; }
 .focus-button { width: min(360px, 100%); min-height: 67px; display: inline-flex; align-items: center; justify-content: center; gap: 15px; border: 0; border-radius: 18px; color: #fffaf2; background: var(--rust); box-shadow: 0 12px 28px rgba(155,66,45,.22); cursor: pointer; transition: transform .2s, background .2s, box-shadow .2s; }
 .focus-button:hover { transform: translateY(-2px); background: var(--rust-dark); box-shadow: 0 15px 34px rgba(155,66,45,.27); }
+.focus-button:disabled { cursor: wait; opacity: .72; transform: none; }
 .focus-button:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid rgba(185,86,61,.28); outline-offset: 3px; }
 .focus-button > span:last-child { display: flex; flex-direction: column; align-items: flex-start; }.focus-button strong { font-size: .97rem; }.focus-button small { color: rgba(255,250,242,.72); font-size: .68rem; }
 .shuttle { width: 29px; height: 11px; border: 2px solid currentColor; border-radius: 70% 18%; transform: rotate(-8deg); }
