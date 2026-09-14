@@ -2,6 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { studyLoomApi, type ApiMember, type ApiStitch, type ApiTrack } from './services/api'
 
+type Theme = 'minecraft' | 'terraria'
+
 const fallbackMembers: ApiMember[] = [
   { id: 'member-rain', name: '小雨', initials: '雨', color: '#ef7f5a', active: true, active_minutes: 42 },
   { id: 'member-he', name: '阿禾', initials: '禾', color: '#5f8e7d', active: true, active_minutes: 18 },
@@ -31,6 +33,7 @@ const elapsedSeconds = ref(0)
 const activeSessionId = ref<string | null>(null)
 const message = ref('')
 const connectionNote = ref('')
+const theme = ref<Theme>((localStorage.getItem('studyloom-theme') as Theme) || 'minecraft')
 let timer: number | undefined
 
 const collectiveHours = computed(() => Math.floor(collectiveMinutes.value / 60))
@@ -54,6 +57,11 @@ function memberStatus(member: ApiMember) {
 
 function stitchTime(createdAt: string) {
   return new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(createdAt))
+}
+
+function setTheme(nextTheme: Theme) {
+  theme.value = nextTheme
+  localStorage.setItem('studyloom-theme', nextTheme)
 }
 
 async function loadRoom() {
@@ -120,7 +128,7 @@ onBeforeUnmount(() => { if (timer) window.clearInterval(timer) })
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'focus-mode': isFocusing }">
+  <div class="app-shell" :class="[theme, { 'focus-mode': isFocusing }]">
     <header class="topbar">
       <a class="brand" href="#" aria-label="StudyLoom 首页">
         <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
@@ -129,7 +137,13 @@ onBeforeUnmount(() => { if (timer) window.clearInterval(timer) })
       <div class="room-identity">
         <span class="room-dot"></span><span>{{ roomName }}</span><span class="member-count">{{ memberCount }} 位成员</span>
       </div>
-      <button class="avatar" type="button" aria-label="打开个人菜单">你</button>
+      <div class="header-actions">
+        <div class="theme-switcher" role="group" aria-label="界面皮肤">
+          <button type="button" :class="{ active: theme === 'minecraft' }" :aria-pressed="theme === 'minecraft'" @click="setTheme('minecraft')"><span class="theme-icon grass-icon"></span><span class="theme-name">Minecraft</span></button>
+          <button type="button" :class="{ active: theme === 'terraria' }" :aria-pressed="theme === 'terraria'" @click="setTheme('terraria')"><span class="theme-icon tree-icon"></span><span class="theme-name">泰拉瑞亚</span></button>
+        </div>
+        <button class="avatar" type="button" aria-label="打开个人菜单">你</button>
+      </div>
     </header>
 
     <p v-if="connectionNote" class="connection-note" role="status">{{ connectionNote }}</p>
