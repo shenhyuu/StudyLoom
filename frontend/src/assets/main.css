@@ -90,68 +90,65 @@ h2 { margin-bottom: 0; font-size: 1.27rem; }
 .folded-stitches { min-height: 158px; display: grid; place-items: center; align-content: center; gap: 14px; text-align: center; }.folded-glow { width: 10px; height: 10px; border-radius: 50%; background: #efc36d; box-shadow: 0 0 16px 6px rgba(239,195,109,.35); animation: glow 2s infinite; }.folded-stitches p { margin: 0; color: var(--muted); font-size: .78rem; }
 .focus-mode { background: rgba(52,45,43,.035); }.focus-mode .fabric { box-shadow: inset 0 0 35px rgba(67,44,34,.18), 0 22px 42px rgba(65,45,36,.16), 0 0 45px rgba(216,168,101,.08); }
 
-/* Minecraft skin — blocky daylight, grass and crafting-table textures. */
-.minecraft {
-  --ink: #26331f; --muted: #607056; --paper: #d9e7c5; --cream: #fff8dc;
-  --rust: #5e8f35; --rust-dark: #3f6b25; --moss: #47752f;
-  --line: rgba(50,62,36,.35); --panel: rgba(245,240,207,.94); --panel-strong: #fff7d8;
-  --shadow: 7px 8px 0 rgba(70,62,39,.16);
-  background:
-    linear-gradient(rgba(255,255,255,.12), rgba(255,255,255,.12)),
-    repeating-linear-gradient(90deg, transparent 0 31px, rgba(56,92,37,.06) 32px),
-    linear-gradient(#9dcce2 0 28%, #8aba5b 28% 31%, #b3d787 31% 100%);
-  font-family: "Courier New", "Microsoft YaHei", monospace;
-}
-.minecraft .topbar { background: rgba(230,239,202,.94); border-bottom: 4px solid #6b9145; backdrop-filter: none; }
-.minecraft .brand, .minecraft h1, .minecraft h2 { font-family: "Courier New", "Microsoft YaHei", monospace; letter-spacing: -.06em; text-shadow: 2px 2px 0 rgba(255,255,255,.55); }
-.minecraft .brand-mark { border: 2px solid #473522; border-radius: 2px; background: #8a603b; box-shadow: inset 0 -5px #6f492e; transform: none; }
-.minecraft .brand-mark i { border-radius: 0; background: #5da33d; }.minecraft .brand-mark i:nth-child(2) { background: #87bd4b; transform: none; }.minecraft .brand-mark i:nth-child(3) { background: #426f30; }
-.minecraft .loom-panel, .minecraft .radio-card, .minecraft .stitch-card { border: 3px solid #625038; border-radius: 4px; box-shadow: var(--shadow); }
-.minecraft .eyebrow { color: #6e4a2c; text-transform: uppercase; }
-.minecraft .fabric { border: 5px solid #6b482a; border-radius: 2px; background: #9b6a3e; box-shadow: inset 0 0 0 4px #c08b55, 7px 8px 0 rgba(53,43,27,.2); transform: none; }
-.minecraft .thread { border-radius: 0; border: 1px solid rgba(49,43,29,.24); transform: none; box-shadow: inset -2px -2px rgba(0,0,0,.1), inset 2px 2px rgba(255,255,255,.12); }
-.minecraft .fabric-row:nth-child(3n) .thread { transform: none; filter: none; }
-.minecraft .thread-0 { background: #5f963c; }.minecraft .thread-1 { background: #b7864e; }.minecraft .thread-2 { background: #477c31; }.minecraft .thread-3 { background: #9f6b3d; }.minecraft .thread-4 { background: #7b5939; }
-.minecraft .focus-button, .minecraft .message-form button { border: 3px solid #31531e; border-radius: 2px; background: #588b32; box-shadow: inset 0 -5px rgba(0,0,0,.16), 4px 5px 0 rgba(47,60,30,.18); }
-.minecraft .focus-button:hover { background: #6ca743; transform: translateY(-1px); }
-.minecraft .album-art .record { border: 5px solid #6d4a2c; border-radius: 2px; background: repeating-linear-gradient(90deg, #805431 0 8px, #98683c 8px 16px); animation: none; }
-.minecraft .album-art .record::before { border-radius: 2px; background: #4c7e2f; box-shadow: inset 0 0 0 4px #79a94b; }
-.minecraft .radio-actions .play-button { border: 3px solid #3d2d21; border-radius: 2px; background: #5d4936; }
-.minecraft .member-avatar, .minecraft .avatar { border-radius: 2px; }
+.theme-masthead { width: min(1120px, calc(100% - 40px)); margin: 18px auto 0; }
+.masthead-art { min-height: 118px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 22px 36px; overflow: hidden; }
+.masthead-title { display: flex; align-items: center; gap: 16px; }
+.masthead-title > div { display: flex; flex-direction: column; }
+.masthead-title strong { line-height: 1; }
+.masthead-title small { margin-top: 7px; }
+.masthead-art p { max-width: 290px; margin: 0; text-align: right; }
+.pixel-emblem { flex: 0 0 auto; width: 52px; height: 52px; }
+.theme-nav { display: grid; grid-template-columns: repeat(4, 1fr); }
+.theme-nav span { min-height: 48px; display: grid; place-items: center; padding: 8px; font-size: .82rem; font-weight: 700; }
 
-/* Terraria skin — starry dusk, jewel tones and luminous pixel borders. */
-.terraria {
-  --ink: #f0ecff; --muted: #abb1d3; --paper: #101a35; --cream: #18284b;
-  --rust: #f19965; --rust-dark: #ffbd76; --moss: #72d59b;
-  --line: rgba(163,179,235,.27); --panel: rgba(24,39,75,.9); --panel-strong: #273b6b;
-  --shadow: 6px 7px 0 rgba(7,10,28,.42), 0 0 24px rgba(81,116,194,.12);
+/* Minecraft skin — inspired by MCBBS's sky banner, timber frame and green forum tabs. */
+.minecraft {
+  --ink: #3a2a1b; --muted: #7c705b; --paper: #d8efff; --cream: #fff8dc;
+  --rust: #68b936; --rust-dark: #438b26; --moss: #5aaa32;
+  --line: rgba(103,82,43,.24); --panel: rgba(255,250,226,.96); --panel-strong: #fff9df;
+  --shadow: 0 2px 7px rgba(58,40,20,.16);
   background:
-    radial-gradient(circle at 12% 12%, #fff 0 1px, transparent 2px),
-    radial-gradient(circle at 72% 20%, #ffe6a7 0 1px, transparent 2px),
-    radial-gradient(circle at 88% 63%, #fff 0 1px, transparent 2px),
-    radial-gradient(circle at 33% 72%, #bcd7ff 0 1px, transparent 2px),
-    linear-gradient(180deg, #0c1632, #263b6b 58%, #183f3c);
-  background-size: 83px 71px, 121px 97px, 157px 129px, 101px 113px, 100% 100%;
-  font-family: Verdana, "Microsoft YaHei", sans-serif;
+    linear-gradient(180deg, rgba(130,195,247,.2) 0 220px, rgba(84,132,51,.35) 520px, rgba(39,74,27,.52) 100%),
+    repeating-linear-gradient(90deg, transparent 0 63px, rgba(255,255,255,.08) 64px),
+    #83c9f7;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
 }
-.terraria .topbar { background: rgba(12,22,50,.91); border-bottom: 3px solid #536aa8; backdrop-filter: blur(12px); }
-.terraria .brand, .terraria h1, .terraria h2 { font-family: Georgia, "Songti SC", serif; color: #fff6d0; text-shadow: 2px 2px 0 #452f68, 0 0 9px rgba(255,222,139,.18); }
-.terraria .brand-mark { border: 2px solid #a2d35d; border-radius: 3px; background: #396d3b; box-shadow: inset 0 -6px #25492e, 0 0 8px rgba(141,223,111,.25); transform: none; }
-.terraria .brand-mark i { border-radius: 0; background: #75c75a; }.terraria .brand-mark i:nth-child(2) { background: #a8df62; transform: none; }.terraria .brand-mark i:nth-child(3) { background: #4c9b4d; }
-.terraria .loom-panel, .terraria .radio-card, .terraria .stitch-card { border: 3px solid #536aa8; border-radius: 5px; box-shadow: inset 0 0 0 2px rgba(183,203,255,.08), var(--shadow); }
-.terraria .eyebrow { color: #ffad78; }.terraria .live-badge { color: #b6ffd0; background: rgba(87,191,125,.17); }
-.terraria .fabric { border: 4px solid #704e8c; border-radius: 4px; background: #39294e; box-shadow: inset 0 0 22px rgba(4,8,30,.6), 7px 8px 0 rgba(4,6,18,.4); transform: none; }
-.terraria .thread { border-radius: 2px; border-color: rgba(15,11,34,.35); box-shadow: inset -2px -2px rgba(0,0,0,.2), inset 1px 1px rgba(255,255,255,.12); }
-.terraria .thread-0 { background: #8054a1; }.terraria .thread-1 { background: #d88b62; }.terraria .thread-2 { background: #4b9d78; }.terraria .thread-3 { background: #5677ba; }.terraria .thread-4 { background: #a75275; }
-.terraria .focus-button, .terraria .message-form button { border: 3px solid #6f4e91; border-radius: 4px; background: #9a5db0; box-shadow: inset 0 -5px rgba(39,19,65,.28), 4px 5px 0 rgba(6,9,27,.35); }
-.terraria .focus-button:hover { background: #af70c4; }.terraria .message-form input { border: 2px solid #465b91; background: rgba(8,17,44,.5); color: #f0ecff; }
-.terraria .album-art .record { border: 4px solid #657bb3; box-shadow: 0 0 22px rgba(120,155,235,.28); }.terraria .album-art .record::before { background: #7256a6; box-shadow: inset 0 0 0 4px #b27bc5; }
-.terraria .radio-actions .play-button { color: #fff6d0; background: #6e4b92; }.terraria .dj-note, .terraria .weaving-now { border-color: var(--line); }
-.terraria .stitch p, .terraria .track-info span, .terraria .member-copy small { color: var(--muted); }.terraria .avatar { background: #394a7b; color: #fff6d0; }
+.minecraft .topbar { height: 48px; background: linear-gradient(rgba(74,157,41,.9),rgba(91,183,49,.9)), repeating-linear-gradient(90deg, transparent 0 28px, rgba(32,91,22,.15) 29px 31px); border-bottom: 2px solid #398020; backdrop-filter: none; }
+.minecraft .brand { color: #fff; font: 700 .96rem Arial, sans-serif; text-shadow: 1px 1px 1px #316719; }.minecraft .brand-mark { width: 24px; height: 24px; border: 2px solid #283b1f; border-radius: 0; background: #725036; box-shadow: inset 0 -6px #4d3524; transform: none; }.minecraft .brand-mark i { border-radius: 0; background: #5ba23a; }.minecraft .brand-mark i:nth-child(2) { background: #8bc954; transform: none; }.minecraft .brand-mark i:nth-child(3) { background: #3e7b2c; }
+.minecraft .room-identity { color: #fff; text-shadow: 1px 1px #34721f; }.minecraft .member-count { color: #e5f6da; border-color: rgba(255,255,255,.35); }
+.minecraft .theme-switcher { border-color: rgba(35,77,22,.55); background: rgba(45,102,27,.42); }.minecraft .theme-switcher button { color: #e9f8df; }.minecraft .theme-switcher button.active { color: #345d20; background: #f7f1d7; }.minecraft .avatar { border: 2px solid #315d22; border-radius: 2px; background: #f5efd9; color: #426b2c; }
+.minecraft .theme-masthead { margin-top: 0; }
+.minecraft .masthead-art { min-height: 150px; color: #fff; background: linear-gradient(90deg, rgba(95,174,238,.18), rgba(130,197,247,.85)), repeating-linear-gradient(0deg, transparent 0 31px, rgba(255,255,255,.08) 32px), #79bef3; border-left: 10px solid #5d2d13; border-right: 10px solid #5d2d13; }
+.minecraft .masthead-title strong { font: 900 clamp(1.7rem,4vw,3rem) Impact, "Arial Black", sans-serif; letter-spacing: .03em; color: #d9d9d9; -webkit-text-stroke: 2px #343434; text-shadow: 3px 3px 0 #222; }.minecraft .masthead-title small { color: #fff844; font: 700 .8rem "Courier New", monospace; transform: rotate(-2deg); text-shadow: 1px 1px #574d00; }.minecraft .masthead-art p { color: #fff; font-weight: 700; text-shadow: 1px 2px #4679a2; }
+.minecraft .pixel-emblem { background: linear-gradient(#82c64d 0 35%, #745035 35%); border: 4px solid #3c2c20; box-shadow: inset -7px -7px rgba(0,0,0,.17), inset 5px 5px rgba(255,255,255,.12); }
+.minecraft .theme-nav { margin: 0 10px; padding: 0 44px; background: #fff9df; border-left: 8px solid #6b3518; border-right: 8px solid #6b3518; }.minecraft .theme-nav span { color: #fff; background: #67ba37; border-right: 1px solid #4b9f29; text-shadow: 1px 1px #478227; }.minecraft .theme-nav span:first-child { border-left: 1px solid #4b9f29; }.minecraft .theme-nav span.active { background: #4d9c2b; box-shadow: inset 0 -4px #367c20; }
+.minecraft .workspace { width: min(1120px, calc(100% - 40px)); margin-top: 0; padding: 30px 42px 46px; background: #fff9df; border: 10px solid #6c3518; border-top: 0; outline: 5px solid #3d2416; outline-offset: -14px; }
+.minecraft .loom-panel, .minecraft .radio-card, .minecraft .stitch-card { border: 1px solid #c9bd99; border-radius: 0; box-shadow: 0 1px 3px rgba(72,48,24,.14); }.minecraft .section-heading, .minecraft .card-heading { padding-bottom: 11px; border-bottom: 3px solid #806d48; }.minecraft h1, .minecraft h2 { font-family: Arial, "Microsoft YaHei", sans-serif; color: #3a2a1b; letter-spacing: 0; text-shadow: none; }.minecraft .eyebrow { color: #5ca630; }
+.minecraft .fabric { border: 7px solid #6b482a; border-radius: 0; background: #9b6a3e; box-shadow: inset 0 0 0 4px #c08b55; transform: none; }.minecraft .thread { border-radius: 0; border: 1px solid rgba(49,43,29,.24); transform: none; box-shadow: inset -2px -2px rgba(0,0,0,.1), inset 2px 2px rgba(255,255,255,.12); }.minecraft .fabric-row:nth-child(3n) .thread { transform: none; filter: none; }.minecraft .thread-0 { background: #5f963c; }.minecraft .thread-1 { background: #b7864e; }.minecraft .thread-2 { background: #477c31; }.minecraft .thread-3 { background: #9f6b3d; }.minecraft .thread-4 { background: #7b5939; }
+.minecraft .focus-button, .minecraft .message-form button { border: 2px solid #3f8c24; border-radius: 0; background: #65b737; box-shadow: inset 0 -4px rgba(0,0,0,.12); }.minecraft .focus-button:hover { background: #75c746; transform: translateY(-1px); }.minecraft .album-art .record { border: 5px solid #6d4a2c; border-radius: 0; background: repeating-linear-gradient(90deg, #805431 0 8px, #98683c 8px 16px); animation: none; }.minecraft .album-art .record::before { border-radius: 0; background: #4c7e2f; box-shadow: inset 0 0 0 4px #79a94b; }.minecraft .radio-actions .play-button { border: 3px solid #3d2d21; border-radius: 0; background: #5d4936; }.minecraft .member-avatar, .minecraft .avatar { border-radius: 0; }
+
+/* Terraria skin — inspired by BBSTR's forum structure and the tavern's cream paper, dark bar and item grid. */
+.terraria {
+  --ink: #34261f; --muted: #887665; --paper: #fff5d6; --cream: #fff6d9;
+  --rust: #7f301d; --rust-dark: #5f2215; --moss: #578140;
+  --line: rgba(112,78,43,.2); --panel: rgba(255,247,218,.96); --panel-strong: #fff9e5;
+  --shadow: 0 2px 8px rgba(78,48,24,.1);
+  background: repeating-linear-gradient(0deg, rgba(121,83,36,.018) 0 1px, transparent 1px 4px), #fff5d6;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+}
+.terraria .topbar { height: 64px; background: #191d27; border-bottom: 0; backdrop-filter: none; }.terraria .brand { color: #e4c871; font-family: Georgia, "Songti SC", serif; text-shadow: 1px 1px #493318; }.terraria .brand-mark { border: 2px solid #8b9a4e; border-radius: 2px; background: #4b6937; box-shadow: inset 0 -6px #314b29; transform: none; }.terraria .brand-mark i { border-radius: 0; background: #79a64e; }.terraria .brand-mark i:nth-child(2) { background: #c0b65b; transform: none; }.terraria .brand-mark i:nth-child(3) { background: #4b7a45; }.terraria .room-identity { color: #f5f0df; }.terraria .member-count { color: #aaa89f; border-color: #454954; }.terraria .theme-switcher { border-color: #414651; background: #242a36; }.terraria .theme-switcher button { color: #aaaeb8; }.terraria .theme-switcher button.active { color: #fff0bd; background: #4a3429; }.terraria .avatar { border-color: #78644c; background: #3f332c; color: #f4dfab; }
+.terraria .theme-masthead { margin-top: 0; }.terraria .masthead-art { min-height: 104px; padding-top: 18px; padding-bottom: 18px; background: #fff5d6; border-bottom: 1px dashed #c5ae84; }.terraria .masthead-title strong { color: #7b321e; font: 700 clamp(1.55rem,3vw,2.3rem) Georgia, "Songti SC", serif; text-shadow: 1px 1px #e4c792; }.terraria .masthead-title small { color: #9d745d; }.terraria .masthead-art p { color: #9a8068; font-size: .82rem; }.terraria .pixel-emblem { position: relative; width: 45px; height: 45px; border: 3px solid #80543c; background: linear-gradient(135deg,#76aa4b 0 48%,#4f7737 49%); box-shadow: inset -6px -6px rgba(50,53,27,.16); transform: rotate(45deg); }.terraria .pixel-emblem::after { content: ""; position: absolute; width: 7px; height: 18px; right: -8px; bottom: -9px; background: #75503a; }
+.terraria .theme-nav { background: #20242d; border-top: 3px solid #78482e; }.terraria .theme-nav span { color: #eee7d5; border-right: 1px solid #353a45; }.terraria .theme-nav span.active { color: #f1c46f; background: #2d313b; box-shadow: inset 0 -3px #91512e; }
+.terraria .workspace { width: min(1120px, calc(100% - 40px)); margin-top: 0; padding: 32px 0 50px; }.terraria .loom-panel, .terraria .radio-card, .terraria .stitch-card { border: 1px solid #d6c49d; border-radius: 0; box-shadow: none; }.terraria .section-heading, .terraria .card-heading { padding: 10px 13px; margin: -1px -1px 0; border-bottom: 1px solid #d6c49d; background: #faecc3; }.terraria .loom-panel { padding-top: 30px; }.terraria .loom-panel > .section-heading { margin: -30px -44px 0; }.terraria h1, .terraria h2 { color: #692717; font-family: Georgia, "Songti SC", serif; text-shadow: none; }.terraria .eyebrow { color: #9b5231; }.terraria .live-badge { color: #517a3f; background: #e6edcb; }
+.terraria .fabric { border: 4px solid #84562f; border-radius: 0; background: #d8b26c; box-shadow: inset 0 0 0 3px #efcf8b; transform: none; }.terraria .thread { border-radius: 0; border-color: rgba(79,49,31,.25); box-shadow: inset -1px -1px rgba(0,0,0,.12), inset 1px 1px rgba(255,255,255,.18); }.terraria .thread-0 { background: #738d45; }.terraria .thread-1 { background: #c87a3f; }.terraria .thread-2 { background: #4f8261; }.terraria .thread-3 { background: #6984a2; }.terraria .thread-4 { background: #a45b59; }
+.terraria .focus-button, .terraria .message-form button { border: 1px solid #642719; border-radius: 2px; background: #813824; box-shadow: inset 0 1px rgba(255,255,255,.18); }.terraria .focus-button:hover { background: #98482e; }.terraria .message-form input { border: 1px solid #b9a67e; border-radius: 2px; background: #fffdf3; color: #3b2c22; }.terraria .album-art .record { border: 4px solid #85572f; box-shadow: 0 3px 8px rgba(83,49,25,.18); }.terraria .album-art .record::before { background: #738c42; box-shadow: inset 0 0 0 4px #afbc5e; }.terraria .radio-actions .play-button { border-radius: 2px; color: #fff2ca; background: #6e3424; }.terraria .stitch p, .terraria .track-info span, .terraria .member-copy small { color: var(--muted); }.terraria .member-avatar, .terraria .avatar { border-radius: 2px; }
 
 @keyframes spin { to { transform: rotate(360deg); } } @keyframes pulse { 50% { box-shadow: 0 0 0 8px rgba(185,86,61,0); } } @keyframes glow { 50% { opacity: .55; transform: scale(.8); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; } }
 @media (max-width: 920px) { .workspace { grid-template-columns: 1fr; }.side-panel { grid-template-columns: 1fr 1fr; }.topbar { grid-template-columns: 1fr auto; }.room-identity { display: none; } }
 @media (max-width: 680px) {
   .topbar { height: 62px; padding: 0 12px; }.brand { font-size: .94rem; }.brand-mark { width: 25px; height: 25px; }.header-actions { gap: 6px; }.theme-switcher button { width: 30px; padding: 0; justify-content: center; }.theme-name { display: none; }.avatar { width: 30px; height: 30px; }.workspace { width: min(100% - 24px, 620px); padding: 18px 0 30px; gap: 14px; }.loom-panel, .radio-card, .stitch-card { border-radius: 18px; }.minecraft .loom-panel, .minecraft .radio-card, .minecraft .stitch-card, .terraria .loom-panel, .terraria .radio-card, .terraria .stitch-card { border-radius: 4px; }.loom-panel { padding: 22px 16px; }.section-heading { align-items: flex-end; }.collective-time strong { font-size: 1.12rem; }.collective-time small { display: none; }.fabric-stage { margin-top: 24px; }.fabric { aspect-ratio: 1.5; padding: 4%; }.member-list { grid-template-columns: repeat(2, 1fr); gap: 17px 10px; }.side-panel { grid-template-columns: 1fr; gap: 14px; }
+  .theme-masthead { width: calc(100% - 24px); }.masthead-art { min-height: 86px; padding: 14px 16px; }.masthead-art p { display: none; }.pixel-emblem { width: 36px; height: 36px; }.masthead-title { gap: 10px; }.masthead-title small { font-size: .62rem; }.theme-nav span { min-height: 42px; padding: 5px 3px; font-size: .66rem; line-height: 1.25; text-align: center; }
+  .minecraft .topbar { height: 48px; }.minecraft .masthead-art { min-height: 94px; border-width: 5px; }.minecraft .masthead-title strong { font-size: 1.55rem; -webkit-text-stroke-width: 1px; text-shadow: 2px 2px #222; }.minecraft .theme-nav { margin: 0 5px; padding: 0; border-width: 4px; }.minecraft .workspace { width: calc(100% - 24px); padding: 22px 16px 30px; border-width: 5px; outline-width: 2px; outline-offset: -8px; }
+  .terraria .topbar { height: 56px; }.terraria .masthead-title strong { font-size: 1.35rem; }.terraria .workspace { width: calc(100% - 24px); padding-top: 18px; }.terraria .loom-panel { padding: 30px 16px 22px; }.terraria .loom-panel > .section-heading { margin: -30px -16px 0; }
 }

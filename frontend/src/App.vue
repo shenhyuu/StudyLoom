@@ -139,12 +139,30 @@ onBeforeUnmount(() => { if (timer) window.clearInterval(timer) })
       </div>
       <div class="header-actions">
         <div class="theme-switcher" role="group" aria-label="界面皮肤">
-          <button type="button" :class="{ active: theme === 'minecraft' }" :aria-pressed="theme === 'minecraft'" @click="setTheme('minecraft')"><span class="theme-icon grass-icon"></span><span class="theme-name">Minecraft</span></button>
-          <button type="button" :class="{ active: theme === 'terraria' }" :aria-pressed="theme === 'terraria'" @click="setTheme('terraria')"><span class="theme-icon tree-icon"></span><span class="theme-name">泰拉瑞亚</span></button>
+          <button type="button" aria-label="切换至 Minecraft 主题" title="Minecraft" :class="{ active: theme === 'minecraft' }" :aria-pressed="theme === 'minecraft'" @click="setTheme('minecraft')"><span class="theme-icon grass-icon"></span><span class="theme-name">Minecraft</span></button>
+          <button type="button" aria-label="切换至泰拉瑞亚主题" title="泰拉瑞亚" :class="{ active: theme === 'terraria' }" :aria-pressed="theme === 'terraria'" @click="setTheme('terraria')"><span class="theme-icon tree-icon"></span><span class="theme-name">泰拉瑞亚</span></button>
         </div>
         <button class="avatar" type="button" aria-label="打开个人菜单">你</button>
       </div>
     </header>
+
+    <section class="theme-masthead" aria-label="当前皮肤风格">
+      <div class="masthead-art">
+        <div class="masthead-title">
+          <span class="pixel-emblem" aria-hidden="true"></span>
+          <div v-if="theme === 'minecraft'"><strong>STUDYLOOM</strong><small>云自习室 · Woven Edition</small></div>
+          <div v-else><strong>泰拉织梦馆</strong><small>StudyLoom · 晚风分馆</small></div>
+        </div>
+        <p v-if="theme === 'minecraft'">把今天的努力，编进同一片世界</p>
+        <p v-else>一盏灯，一块布，和一群正在努力的朋友</p>
+      </div>
+      <nav class="theme-nav" aria-label="自习室区域">
+        <span class="active">经线 · 集体时长</span>
+        <span>纬线 · 云电台</span>
+        <span>针脚 · 留言册</span>
+        <span>本周回顾</span>
+      </nav>
+    </section>
 
     <p v-if="connectionNote" class="connection-note" role="status">{{ connectionNote }}</p>
     <main class="workspace">
