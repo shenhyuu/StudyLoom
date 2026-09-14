@@ -1,11 +1,19 @@
-# Test your FastAPI endpoints
+### Health
+GET http://127.0.0.1:8000/api/health
 
-GET http://127.0.0.1:8000/
-Accept: application/json
+### Current private room snapshot
+GET http://127.0.0.1:8000/api/rooms/current
+X-User-Id: member-you
 
-###
+### Start focusing
+POST http://127.0.0.1:8000/api/focus/start
+X-User-Id: member-you
 
-GET http://127.0.0.1:8000/hello/User
-Accept: application/json
+### Add a permanent stitch
+POST http://127.0.0.1:8000/api/stitches
+X-User-Id: member-you
+Content-Type: application/json
 
-###
+{
+  "content": "今晚一起把计划完成。"
+}
