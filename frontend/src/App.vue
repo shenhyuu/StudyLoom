@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import PixelIcon from './components/PixelIcon.vue'
+import WorldScene from './components/WorldScene.vue'
+import TerrariaWorld from './components/TerrariaWorld.vue'
+import TerrariaSprite from './components/TerrariaSprite.vue'
+import './assets/terraria.css'
 import { studyLoomApi, type ApiMember, type ApiStitch, type ApiTrack } from './services/api'
 
 type Theme = 'minecraft' | 'terraria'
@@ -33,12 +38,17 @@ const elapsedSeconds = ref(0)
 const activeSessionId = ref<string | null>(null)
 const message = ref('')
 const connectionNote = ref('')
-const theme = ref<Theme>((localStorage.getItem('studyloom-theme') as Theme) || 'minecraft')
+const hasLoadedRoom = ref(false)
+const theme = ref<Theme>(localStorage.getItem('studyloom-theme') === 'terraria' ? 'terraria' : 'minecraft')
+const journalOpen = ref(true)
+const milestoneProgress = computed(() => Math.min(100, collectiveMinutes.value / Math.max(1, milestoneTargetMinutes.value) * 100))
+const focusMembers = computed(() => members.value.map(member => member.id === 'member-you' && isFocusing.value ? { ...member, active: true, active_minutes: Math.floor(elapsedSeconds.value / 60) } : member))
+function formatSeconds(value: number) { return Math.floor(value / 60).toString().padStart(2, '0') + ':' + Math.floor(value % 60).toString().padStart(2, '0') }
 let timer: number | undefined
 
 const collectiveHours = computed(() => Math.floor(collectiveMinutes.value / 60))
 const collectiveRemainder = computed(() => collectiveMinutes.value % 60)
-const activeCount = computed(() => members.value.filter((member) => member.active).length)
+const activeCount = computed(() => focusMembers.value.filter((member) => member.active).length)
 const nextMilestoneMinutes = computed(() => Math.max(0, milestoneTargetMinutes.value - collectiveMinutes.value))
 const nextMilestoneLabel = computed(() => `${Math.floor(nextMilestoneMinutes.value / 60)} 小时 ${nextMilestoneMinutes.value % 60} 分`)
 const trackProgress = computed(() => `${Math.min(100, (track.value.position_seconds / track.value.duration_seconds) * 100)}%`)
@@ -51,8 +61,8 @@ const timerLabel = computed(() => {
 function memberStatus(member: ApiMember) {
   if (member.id === 'member-you' && !member.active) return '准备开始'
   if (!member.active) return '暂时离开'
-  if (member.active_minutes >= 60) return `已编织 ${Math.floor(member.active_minutes / 60)} 小时`
-  return `已编织 ${member.active_minutes} 分钟`
+  if (member.active_minutes >= 60) return `专注中 · ${Math.floor(member.active_minutes / 60)} 小时`
+  return `专注中 · ${member.active_minutes} 分钟`
 }
 
 function stitchTime(createdAt: string) {
@@ -74,9 +84,10 @@ async function loadRoom() {
     members.value = room.members
     track.value = room.track
     stitches.value = room.stitches
+    hasLoadedRoom.value = true
     connectionNote.value = ''
   } catch {
-    connectionNote.value = '暂时连不上房间，正在展示最近一次织物'
+    connectionNote.value = hasLoadedRoom.value ? '连接已断开 · 正在显示上次加载的数据' : '房间暂未连接 · 当前为示例数据，请连接后重试'
   }
 }
 
@@ -117,7 +128,7 @@ async function sendStitch() {
     stitches.value.unshift(stitch)
     message.value = ''
   } catch (error) {
-    connectionNote.value = error instanceof Error ? error.message : '这枚针脚暂时没有保存成功'
+    connectionNote.value = error instanceof Error ? error.message : '留言暂未保存，请重试'
   } finally {
     isSaving.value = false
   }
@@ -130,117 +141,43 @@ onBeforeUnmount(() => { if (timer) window.clearInterval(timer) })
 <template>
   <div class="app-shell" :class="[theme, { 'focus-mode': isFocusing }]">
     <header class="topbar">
-      <a class="brand" href="#" aria-label="StudyLoom 首页">
-        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span>
-        <span>StudyLoom</span>
-      </a>
-      <div class="room-identity">
-        <span class="room-dot"></span><span>{{ roomName }}</span><span class="member-count">{{ memberCount }} 位成员</span>
-      </div>
-      <div class="header-actions">
-        <div class="theme-switcher" role="group" aria-label="界面皮肤">
-          <button type="button" aria-label="切换至 Minecraft 主题" title="Minecraft" :class="{ active: theme === 'minecraft' }" :aria-pressed="theme === 'minecraft'" @click="setTheme('minecraft')"><span class="theme-icon grass-icon"></span><span class="theme-name">Minecraft</span></button>
-          <button type="button" aria-label="切换至泰拉瑞亚主题" title="泰拉瑞亚" :class="{ active: theme === 'terraria' }" :aria-pressed="theme === 'terraria'" @click="setTheme('terraria')"><span class="theme-icon tree-icon"></span><span class="theme-name">泰拉瑞亚</span></button>
-        </div>
-        <button class="avatar" type="button" aria-label="打开个人菜单">你</button>
+      <a class="brand" href="#home"><PixelIcon :kind="theme === 'minecraft' ? 'grass' : 'tree'"/><span>StudyLoom<small>一起专注，让世界生长</small></span></a>
+      <nav class="top-links" aria-label="房间导航"><a href="#home" class="selected">自习世界</a><a href="#companions">同行伙伴</a><a href="#journal">留言小站</a></nav>
+      <div class="theme-switcher" role="group" aria-label="选择世界风格">
+        <button :class="{ active: theme === 'minecraft' }" :aria-pressed="theme === 'minecraft'" @click="setTheme('minecraft')"><PixelIcon kind="grass"/>Minecraft</button>
+        <button :class="{ active: theme === 'terraria' }" :aria-pressed="theme === 'terraria'" @click="setTheme('terraria')"><PixelIcon kind="tree"/>Terraria</button>
       </div>
     </header>
-
-    <section class="theme-masthead" aria-label="当前皮肤风格">
-      <div class="masthead-art">
-        <div class="masthead-title">
-          <span class="pixel-emblem" aria-hidden="true"></span>
-          <div v-if="theme === 'minecraft'"><strong>STUDYLOOM</strong><small>云自习室 · Woven Edition</small></div>
-          <div v-else><strong>泰拉织梦馆</strong><small>StudyLoom · 晚风分馆</small></div>
-        </div>
-        <p v-if="theme === 'minecraft'">把今天的努力，编进同一片世界</p>
-        <p v-else>一盏灯，一块布，和一群正在努力的朋友</p>
-      </div>
-      <nav class="theme-nav" aria-label="自习室区域">
-        <span class="active">经线 · 集体时长</span>
-        <span>纬线 · 云电台</span>
-        <span>针脚 · 留言册</span>
-        <span>本周回顾</span>
-      </nav>
-    </section>
-
-    <p v-if="connectionNote" class="connection-note" role="status">{{ connectionNote }}</p>
-    <main class="workspace">
-      <section class="loom-panel" aria-labelledby="loom-title">
-        <div class="section-heading">
-          <div><p class="eyebrow">本周经线 · 第 37 周</p><h1 id="loom-title">我们正在编织</h1></div>
-          <div class="collective-time"><strong>{{ collectiveHours }}</strong><span>小时</span><strong>{{ collectiveRemainder }}</strong><span>分</span><small>全员共同积累</small></div>
-        </div>
-
-        <div class="fabric-stage" :aria-label="`本周集体专注织物，已积累 ${collectiveHours} 小时 ${collectiveRemainder} 分`">
-          <div class="fabric-shadow"></div>
-          <div class="fabric">
-            <div v-for="row in 12" :key="row" class="fabric-row">
-              <span v-for="column in 18" :key="column" :class="['thread', `thread-${(row + column) % 5}`]"></span>
-            </div>
-            <span class="milestone milestone-one" title="10 小时里程碑"></span>
-            <span class="milestone milestone-two" title="25 小时里程碑"></span>
-          </div>
-          <div class="fabric-caption"><span>周一</span><span class="progress-note"><i></i> 距离下一束微光还有 {{ nextMilestoneLabel }}</span><span>周日</span></div>
-        </div>
-
-        <div class="weaving-now">
-          <div class="weaving-label"><span class="pulse"></span><strong>{{ activeCount }} 人正在编织</strong></div>
-          <div class="member-list">
-            <div v-for="member in members" :key="member.id" class="member">
-              <span class="member-avatar" :style="{ '--avatar-color': member.color }">{{ member.initials }}</span>
-              <span class="member-copy"><strong>{{ member.name }}</strong><small>{{ memberStatus(member) }}</small></span>
-            </div>
-          </div>
-        </div>
-
-        <div class="focus-action">
-          <button class="focus-button" type="button" :disabled="isSaving" @click="toggleFocus">
-            <span class="shuttle" aria-hidden="true"></span>
-            <span v-if="!isFocusing"><strong>开始编织</strong><small>和大家安静地待一会儿</small></span>
-            <span v-else><strong>结束本次编织</strong><small>已经专注 {{ timerLabel }}</small></span>
-          </button>
-          <p v-if="isFocusing" class="focus-whisper">针脚消息已折叠，休息时再慢慢看</p>
-        </div>
+    <main id="home" class="workspace">
+      <div class="world-heading"><div class="world-path"><span>{{ theme === 'minecraft' ? '我的世界' : '泰拉大陆' }}</span><span>/</span>{{ roomName }}</div><span class="world-edition">{{ theme === 'minecraft' ? 'OVERWORLD' : 'TERRARIA WORLD' }} <i></i> 私密房间</span></div>
+      <TerrariaWorld v-if="theme === 'terraria'" :room-name="roomName" :focusing="isFocusing" :active-count="activeCount"/>
+      <section v-else class="world-window" aria-labelledby="room-title">
+        <div class="world-title"><p class="eyebrow">A LITTLE WORLD, BUILT TOGETHER</p><h1 id="room-title">{{ roomName }}<span>在这里，慢慢生长。</span></h1><p>把一段专注的时光，留给自己，也留给彼此。</p></div>
+        <WorldScene :theme="theme" :focusing="isFocusing"/>
+        <div class="scene-badge"><PixelIcon :kind="theme === 'minecraft' ? 'grass' : 'torch'"/>{{ theme === 'minecraft' ? '平原 · 微风' : '森林 · 星夜' }}</div>
+        <span class="scene-coordinate">{{ theme === 'minecraft' ? 'X: 128 / Y: 64 / Z: 37' : '地表 · 128 英尺' }}</span>
+        <div class="world-status"><span><i class="status-dot"></i>{{ activeCount }} 位伙伴正在专注</span><span>每一分钟，都在建造我们的世界 <PixelIcon :kind="theme === 'minecraft' ? 'heart' : 'life'"/></span></div>
       </section>
-
-      <aside class="side-panel">
-        <section class="radio-card" aria-labelledby="radio-title">
-          <div class="card-heading">
-            <div><p class="eyebrow">纬线 · 云电台</p><h2 id="radio-title">此刻一起听</h2></div><span class="live-badge">同步中</span>
+      <p v-if="connectionNote" class="connection-note" role="status">{{ connectionNote }} <button @click="loadRoom">重新连接 ↻</button></p>
+      <div class="dashboard">
+        <section class="progress-panel panel" aria-labelledby="progress-title">
+          <div class="panel-heading"><div><TerrariaSprite v-if="theme === 'terraria'" name="Work_Bench"/><PixelIcon v-else kind="grass"/><h2 id="progress-title">{{ theme === 'terraria' ? '世界建造进度' : '共同建造' }}</h2></div><span>集体专注</span></div>
+          <div class="progress-content"><p class="muted">{{ theme === 'terraria' ? '从第一间木屋，到属于我们的城镇' : '一点一滴，积累成风景' }}</p><div class="time-total"><strong>{{ collectiveHours }}</strong><span>小时</span><strong>{{ collectiveRemainder }}</strong><span>分钟</span></div>
+            <div class="milestone-label"><span><PixelIcon kind="star"/>下一座里程碑</span><b>{{ Math.round(milestoneProgress) }}%</b></div>
+            <div class="xp-bar" role="progressbar" aria-label="集体专注里程碑进度" :aria-valuenow="Math.round(milestoneProgress)" :aria-valuemin="0" :aria-valuemax="100"><span :style="{ width: milestoneProgress + '%' }"></span></div>
+            <p class="milestone-note">再一起专注 <b>{{ nextMilestoneLabel }}</b>，点亮新的微光。</p>
+            <div class="achievement-shelf"><div :class="{ unlocked: collectiveMinutes >= 600 }"><TerrariaSprite v-if="theme === 'terraria'" name="Work_Bench"/><PixelIcon v-else kind="pickaxe"/><span>{{ theme === 'terraria' ? '安家落户' : '初次开拓' }}</span><small>10 小时</small></div><div :class="{ unlocked: collectiveMinutes >= 1500 }"><TerrariaSprite v-if="theme === 'terraria'" name="Life_Crystal"/><PixelIcon v-else kind="tree"/><span>{{ theme === 'terraria' ? '生命之光' : '枝繁叶茂' }}</span><small>25 小时</small></div><div :class="{ unlocked: collectiveMinutes >= milestoneTargetMinutes }"><TerrariaSprite v-if="theme === 'terraria'" name="Forest_Pylon"/><PixelIcon v-else kind="chest"/><span>{{ theme === 'terraria' ? '晶塔相连' : '下一束光' }}</span><small>{{ Math.round(milestoneTargetMinutes / 60) }} 小时</small></div></div>
           </div>
-          <div class="album-art" aria-hidden="true"><span class="record"><i></i></span><span class="needle"></span></div>
-          <div class="track-info"><strong>{{ track.title }}</strong><span>{{ track.artist }} · {{ track.album }}</span></div>
-          <div class="track-progress"><span :style="{ width: trackProgress }"></span></div><div class="track-times"><span>02:16</span><span>-02:28</span></div>
-          <div class="radio-actions">
-            <button type="button" aria-label="白噪音">≈<span>{{ track.white_noise }} {{ track.white_noise_volume }}%</span></button>
-            <button class="play-button" type="button" aria-label="暂停">Ⅱ</button>
-            <button type="button" aria-label="投票跳过">↝<span>跳过 {{ track.skip_votes }}/{{ track.votes_needed }}</span></button>
-          </div>
-          <p class="dj-note">下一首由 <strong>{{ track.next_dj }}</strong> 选择</p>
         </section>
-
-        <section class="stitch-card" :class="{ collapsed: isFocusing }" aria-labelledby="stitch-title">
-          <div class="card-heading">
-            <div><p class="eyebrow">针脚 · 9 月</p><h2 id="stitch-title">休息时聊聊</h2></div>
-            <button class="book-button" type="button">针脚册 <span>›</span></button>
-          </div>
-          <div v-if="isFocusing" class="folded-stitches"><span class="folded-glow"></span><p>有 {{ stitches.length }} 枚针脚安静地留在这里</p></div>
-          <template v-else>
-            <form class="message-form" @submit.prevent="sendStitch">
-              <label class="sr-only" for="stitch-message">写下一条针脚消息</label>
-              <input id="stitch-message" v-model="message" maxlength="180" placeholder="留一枚针脚…" autocomplete="off" />
-              <button type="submit" :disabled="!message.trim() || isSaving" aria-label="发送消息">↑</button>
-            </form>
-            <div class="stitch-list" aria-live="polite">
-              <article v-for="stitch in stitches" :key="stitch.id" class="stitch">
-                <span class="member-avatar small" :style="{ '--avatar-color': stitch.color }">{{ stitch.initials }}</span>
-                <div><div class="stitch-meta"><strong>{{ stitch.author }}</strong><time>{{ stitchTime(stitch.created_at) }}</time></div><p>{{ stitch.content }}</p></div>
-              </article>
-            </div>
-          </template>
+        <section class="focus-panel panel" aria-labelledby="focus-title"><div class="panel-heading"><div><TerrariaSprite v-if="theme === 'terraria'" name="Campfire"/><PixelIcon v-else kind="pickaxe"/><h2 id="focus-title">{{ theme === 'minecraft' ? '你的工作台' : '篝火旁的时光' }}</h2></div><span>{{ isFocusing ? '专注进行中' : '准备就绪' }}</span></div>
+          <div class="focus-content"><div v-if="theme === 'terraria'" class="tr-focus-buff"><TerrariaSprite name="Campfire"/><span>温暖篝火<small>{{ isFocusing ? '专注进行中' : '在这里，安心做自己的事' }}</small></span></div><p class="eyebrow">{{ isFocusing ? 'ONE MINUTE AT A TIME' : 'MAKE ROOM FOR A LITTLE FOCUS' }}</p><div class="timer" role="timer" aria-label="本次专注时长">{{ timerLabel }}</div><p>{{ isFocusing ? '安静地做自己的事，我们都在这里。' : '不必急着抵达，先从这一分钟开始。' }}</p><button class="focus-button" :disabled="isSaving" @click="toggleFocus"><TerrariaSprite v-if="theme === 'terraria'" :name="isFocusing ? 'Gold_Chest' : 'Copper_Pickaxe'"/><PixelIcon v-else :kind="isFocusing ? 'chest' : 'pickaxe'"/>{{ isSaving ? '正在保存…' : isFocusing ? '结束专注 · 保存时光' : '开始专注' }}<span>{{ isFocusing ? '■' : '▶' }}</span></button><small>专注时，留言会暂时收起</small></div>
         </section>
-      </aside>
+        <section id="radio" class="radio-panel panel" aria-labelledby="radio-title"><div class="panel-heading"><div><TerrariaSprite v-if="theme === 'terraria'" name="Music_Box"/><PixelIcon v-else kind="music"/><h2 id="radio-title">{{ theme === 'terraria' ? '营地音乐盒' : '营地电台' }}</h2></div><span>房间曲目</span></div><div class="radio-content"><div class="record-cover"><TerrariaSprite v-if="theme === 'terraria'" name="Music_Box"/><PixelIcon v-else kind="music"/><span class="sound-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div><div class="track-info"><strong>{{ track.title }}</strong><span>{{ track.artist }} · {{ track.album }}</span></div><div class="track-progress"><span :style="{ width: trackProgress }"></span></div><div class="track-times"><span>{{ formatSeconds(track.position_seconds) }}</span><span>{{ formatSeconds(track.duration_seconds) }}</span></div><div class="radio-detail"><span>≈ {{ track.white_noise || '环境音关闭' }}</span><span>{{ track.white_noise_volume }}%</span></div><p class="dj-note">下一首由 <strong>{{ track.next_dj }}</strong> 选择</p></div></section>
+      </div>
+      <section id="companions" class="companions panel" aria-labelledby="companions-title"><div class="panel-heading"><div><PixelIcon :kind="theme === 'minecraft' ? 'heart' : 'life'"/><h2 id="companions-title">{{ theme === 'terraria' ? '城镇居民 · 同行的冒险者' : '同一片世界里的伙伴' }}</h2></div><span>{{ memberCount }} 位成员</span></div><div class="member-list"><article v-for="member in focusMembers" :key="member.id" class="member" :class="{ 'is-active': member.active }"><div class="portrait" :style="{ '--avatar-color': member.color }"><svg v-if="theme === 'terraria'" class="tr-player" viewBox="0 0 16 24" aria-hidden="true" shape-rendering="crispEdges"><path fill="#18213b" d="M4 1h8v3h2v7h-2v2h2v7h-2v4H8v-3H7v3H3v-5H1v-6h3z"/><path fill="#a07651" d="M4 2h7v2h2v3H3V4h1z"/><path fill="#edbf90" d="M4 6h8v5H4zM2 14h2v5H2zm10 0h2v5h-2z"/><path fill="#f8dab0" d="M6 6h6v3H6z"/><path fill="#263145" d="M10 7h2v2h-2z"/><path fill="var(--avatar-color)" d="M4 12h8v7H4z"/><path fill="#6782a5" d="M4 19h3v3H4zm5 0h3v3H9z"/><path fill="#b5d1de" opacity=".5" d="M4 13h2v5H4z"/></svg><span v-else class="pixel-face"><i></i></span><span class="member-presence"></span></div><div><strong>{{ member.name }} <small v-if="member.id === 'member-you'">YOU</small></strong><p>{{ memberStatus(member) }}</p></div><PixelIcon v-if="member.active" :kind="theme === 'minecraft' ? 'pickaxe' : 'star'"/></article></div></section>
+      <section id="journal" class="journal panel" aria-labelledby="journal-title"><div class="panel-heading"><div><PixelIcon kind="book"/><h2 id="journal-title">营地留言簿</h2><span class="journal-subtitle">休息一下，再继续出发</span></div><button :aria-expanded="journalOpen" aria-controls="journal-content" @click="journalOpen = !journalOpen">{{ journalOpen ? '收起 −' : '展开 +' }}</button></div><div v-if="journalOpen" id="journal-content"><div v-if="isFocusing" class="folded-stitches"><PixelIcon kind="book"/>{{ stitches.length }} 条留言在这里等你，休息时再来看。</div><div v-else class="journal-body"><div class="stitch-list" aria-live="polite"><article v-for="stitch in stitches" :key="stitch.id" class="stitch"><span class="initial-avatar" :style="{ '--avatar-color': stitch.color }">{{ stitch.initials }}</span><div><div class="stitch-meta"><strong>{{ stitch.author }}</strong><time>{{ stitchTime(stitch.created_at) }}</time></div><p>{{ stitch.content }}</p></div></article><p v-if="!stitches.length" class="muted">这里还很安静，留下第一条留言吧。</p></div><form class="message-form" @submit.prevent="sendStitch"><label for="stitch-message">留句话，给同行的伙伴</label><textarea id="stitch-message" v-model="message" maxlength="180" placeholder="今天也有好好努力。" rows="3"></textarea><div><span>{{ message.length }} / 180</span><button :disabled="!message.trim() || isSaving">留下留言 ↗</button></div></form></div></div></section>
+      <details v-if="theme === 'terraria'" class="tr-credits"><summary>关于这片泰拉世界 · 灵感与素材</summary><p>致敬 Terraria / Re-Logic。NPC 与物品精灵取自 Terraria Wiki 并保存在本地；场景为原创 SVG，学习对话为原创改写。星星收藏在离开主题或刷新后重置，晶塔用于切换主题风景。</p><a href="https://terraria.wiki.gg/wiki/Guide" target="_blank" rel="noreferrer">NPC · 向导 ↗</a><a href="https://terraria.wiki.gg/wiki/Inventory" target="_blank" rel="noreferrer">物品栏 ↗</a><a href="https://terraria.wiki.gg/wiki/Biomes" target="_blank" rel="noreferrer">生态环境 ↗</a><a href="https://terraria.huijiwiki.com/wiki/首页" target="_blank" rel="noreferrer">灰机 Wiki ↗</a><a href="https://terraria.fandom.com/wiki/Terraria_Wiki" target="_blank" rel="noreferrer">Fandom Wiki ↗</a></details>
+      <footer><span><PixelIcon :kind="theme === 'minecraft' ? 'grass' : 'tree'"/>StudyLoom · 小小世界，慢慢生长</span><span>不比较进度，只分享陪伴。</span></footer>
     </main>
   </div>
 </template>
