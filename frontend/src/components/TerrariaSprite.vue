@@ -3,7 +3,7 @@ defineProps<{ name: string; label?: string }>()
 </script>
 
 <template>
-  <img class="terraria-sprite" :src="`/terraria/${name}.png`" :alt="label || ''" draggable="false" />
+  <img class="terraria-sprite" :src="name.includes('.') ? `/terraria/${name}` : `/terraria/${name}.png`" :alt="label || ''" draggable="false" />
 </template>
 
 <style>

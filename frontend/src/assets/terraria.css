@@ -35,6 +35,22 @@
 .terraria .achievement-shelf > div { flex: 1; border: 2px solid #4b6199; background: #304477; border-radius: 7px; padding: 9px 4px 6px; box-shadow: inset 0 1px #8398bf66; }
 .terraria .achievement-shelf > div.unlocked { border-color: #9b9167; }
 .terraria .achievement-shelf .terraria-sprite { width: 34px; height: 34px; margin-bottom: 3px; }
+/* Boss 进度轨道：横向一排 + 左右滚动，默认聚焦最新击败与正在挑战的 Boss。
+   正在挑战：金色边框 + 环形进度光圈（--boss-progress 占光圈一周比例）；
+   最新击败：图标外圈金色亮光。 */
+.terraria .boss-track { position: relative; flex-wrap: nowrap; overflow-x: auto; gap: 8px; padding-bottom: 7px; scrollbar-width: thin; scrollbar-color: #4b6199 #1a2547; }
+.terraria .boss-track::-webkit-scrollbar { height: 7px; }
+.terraria .boss-track::-webkit-scrollbar-track { background: #1a2547; border-radius: 4px; }
+.terraria .boss-track::-webkit-scrollbar-thumb { background: #4b6199; border-radius: 4px; }
+.terraria .boss-track > div { flex: 0 0 auto; width: 86px; padding: 10px 4px 8px; }
+.terraria .boss-track > div.latest { box-shadow: inset 0 1px #8398bf66, 0 0 10px #ffe98a2e; }
+.terraria .boss-track > div.fighting { border-color: #d9c66d; background: #3a5182; box-shadow: inset 0 1px #8398bf66, 0 0 12px #e8d77830; }
+.terraria .boss-track .boss-icon { position: relative; display: block; width: 48px; height: 48px; margin-bottom: 3px; border-radius: 50%; border: 2px solid #4b6199; background: #26365e; }
+.terraria .boss-track > div.latest .boss-icon { border-color: #f0d68a; box-shadow: 0 0 12px #ffe98a80, inset 0 0 6px #ffe98a33; }
+.terraria .boss-track > div.fighting .boss-icon { border-color: transparent; background: conic-gradient(from -90deg, #ffd76e var(--boss-progress, 0%), #26365e 0); }
+.terraria .boss-track .boss-icon-inner { position: absolute; inset: 3px; display: grid; place-items: center; border-radius: 50%; background: #304477; }
+.terraria .boss-track .terraria-sprite { width: 32px; height: 32px; margin-bottom: 0; }
+.terraria .boss-track > div.fighting .terraria-sprite { filter: drop-shadow(0 0 6px #ffe98a88); }
 .terraria .focus-panel { background: radial-gradient(ellipse at 50% 80%, #54745128, transparent 75%), #1e2a4c; }
 .terraria .focus-content { padding: 17px 24px 19px; }
 .tr-focus-buff { display: flex; justify-content: center; align-items: center; gap: 9px; margin: 0 0 13px; text-align: left; color: #edce8a; font-size: 11px; }
@@ -204,6 +220,7 @@
   .tr-npc-tabs button { width: 44px; }
   .tr-npc-tabs .terraria-sprite { height: 31px; }
   .terraria .achievement-shelf > div { padding: 10px; }
+  .terraria .boss-track > div { width: 82px; }
   .terraria .message-form textarea { font-size: 16px; }
 }
 @media (max-width: 350px) {

@@ -12,3 +12,16 @@
 @media(prefers-reduced-motion:reduce){.mc-clouds{animation:none}.mc-secret{transition:none}}
 
 .mc-landscape image{image-rendering:pixelated}.mc-tinted-leaves{mix-blend-mode:multiply}
+@font-face {
+  font-family: 'StudyLoom Unifont';
+  src: url('./unifont_t-17.0.05.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Cover component font shorthands as well as inherited theme text. */
+.app-shell.minecraft,
+.app-shell.minecraft :where(*) {
+  font-family: 'StudyLoom Unifont', monospace !important;
+}

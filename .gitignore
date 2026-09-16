@@ -21,3 +21,8 @@ Thumbs.db
 *.local
 *.log
 
+
+# Persistent application database
+backend/data/
+*.db-wal
+*.db-shm

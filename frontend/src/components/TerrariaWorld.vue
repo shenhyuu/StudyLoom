@@ -61,7 +61,7 @@ function collectStar() {
       </div>
       <div class="tr-world-copy"><p class="tr-kicker"><i></i> {{ place.caption }} · {{ night ? '星夜' : '白昼' }}</p><h1 id="room-title">{{ roomName }}</h1><p class="tr-room-motto">挖掘一点灵感，<br/>建造一整个世界。</p><p class="tr-world-description">{{ place.description }}</p><a class="tr-join" href="#focus-title"><TerrariaSprite name="Campfire"/>去篝火旁坐坐 <span>→</span></a></div>
       <button class="tr-time-toggle" @click="night = !night" :aria-label="night ? '切换白昼场景' : '切换星夜场景'"><span>{{ night ? '☾' : '☀' }}</span>{{ night ? '星夜' : '白昼' }} <small>切换</small></button>
-      <div class="tr-house-label">⌂ NPC 营地 <span>适合居住</span></div>
+      <div class="tr-house-label">⌂ 城镇环境 <span>适合居住</span></div>
       <button v-if="night && !collected.includes(biome)" class="tr-fallen-star" aria-label="拾取坠落之星" title="坠落之星 · 点击拾取" @click="collectStar"><TerrariaSprite name="Fallen_Star"/></button>
       <div class="tr-scene-bottom"><span><i class="status-dot"></i>{{ activeCount }} 位冒险者正在专注</span><span><TerrariaSprite name="Campfire"/>{{ focusing ? '温暖篝火 · 专注进行中' : '温暖篝火 · 等你入座' }}</span></div>
     </div>

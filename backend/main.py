@@ -1,173 +1,195 @@
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
-from threading import Lock
-from typing import Annotated
+import os
+import sqlite3
+import time
+from contextlib import asynccontextmanager, contextmanager
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Literal
+from urllib.parse import quote
 from uuid import uuid4
 
-from fastapi import FastAPI, Header, HTTPException, status
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
+if __package__:
+    from . import music
+else:
+    import music
 
-app = FastAPI(title="StudyLoom API", description="Private room APIs for the StudyLoom MVP.", version="0.1.0")
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
-    allow_credentials=True,
-    allow_methods=["GET", "POST"],
-    allow_headers=["Content-Type", "X-User-Id"],
-)
+BASE = Path(__file__).resolve().parent
+DB_PATH = Path(os.getenv('STUDYLOOM_DB', str(BASE / 'data' / 'studyloom.db')))
+MEDIA = BASE / 'static'
+ONLINE_SECONDS = 25
 
-UserId = Annotated[str, Header(alias="X-User-Id")]
-ROOM_ID = "evening-breeze"
-MAX_ROOM_MEMBERS = 20
-CHINA_TIMEZONE = timezone(timedelta(hours=8))
+@contextmanager
+def database():
+    connection = sqlite3.connect(DB_PATH, timeout=15)
+    connection.row_factory = sqlite3.Row
+    connection.execute('PRAGMA foreign_keys=ON')
+    try:
+        with connection:
+            yield connection
+    finally:
+        connection.close()
 
+@asynccontextmanager
+async def lifespan(app):
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    MEDIA.mkdir(parents=True, exist_ok=True)
+    with database() as db:
+        db.execute('PRAGMA journal_mode=WAL')
+        db.executescript('''
+        CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, token TEXT UNIQUE NOT NULL, name TEXT NOT NULL, color TEXT NOT NULL, last_seen REAL NOT NULL DEFAULT 0);
+        CREATE TABLE IF NOT EXISTS focus_sessions (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), started_at REAL NOT NULL, stopped_at REAL, duration_minutes INTEGER);
+        CREATE UNIQUE INDEX IF NOT EXISTS one_active_focus ON focus_sessions(user_id) WHERE stopped_at IS NULL;
+        CREATE TABLE IF NOT EXISTS stitches (id TEXT PRIMARY KEY, user_id TEXT NOT NULL REFERENCES users(id), content TEXT NOT NULL, created_at REAL NOT NULL);
+        CREATE TABLE IF NOT EXISTS room_music (id INTEGER PRIMARY KEY CHECK(id=1), history TEXT NOT NULL, cursor INTEGER NOT NULL, started_at REAL NOT NULL, revision INTEGER NOT NULL);
+        PRAGMA user_version=2;
+        ''')
+    yield
 
-class Member(BaseModel):
-    id: str
-    name: str
-    initials: str
-    color: str
-    active: bool = False
-    active_minutes: int = 0
+app = FastAPI(title='StudyLoom API', version='1.0.0', lifespan=lifespan)
+app.add_middleware(CORSMiddleware, allow_origins=os.getenv('CORS_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(','), allow_methods=['GET', 'POST'], allow_headers=['Content-Type', 'X-User-Id'])
+MEDIA.mkdir(parents=True, exist_ok=True)
 
+class AudioStaticFiles(StaticFiles):
+    def file_response(self, full_path, stat_result, scope, status_code=200):
+        response = super().file_response(full_path, stat_result, scope, status_code)
+        if Path(full_path).suffix.lower() in {'.mp3', '.flac', '.ogg', '.wav', '.m4a', '.aac'}:
+            _, mime = music.metadata(str(full_path), stat_result.st_mtime_ns, stat_result.st_size)
+            if mime:
+                response.headers['content-type'] = mime
+        return response
 
-class Track(BaseModel):
-    title: str
-    artist: str
-    album: str
-    duration_seconds: int
-    position_seconds: int
-    playing: bool
-    white_noise: str | None = None
-    white_noise_volume: int = 0
-    next_dj: str
-    skip_votes: int = 0
-    votes_needed: int = 5
+app.mount('/static', AudioStaticFiles(directory=MEDIA), name='media')
 
-
-class Stitch(BaseModel):
-    id: str
-    author_id: str
-    author: str
-    initials: str
-    color: str
-    content: str
-    created_at: datetime
-
-
-class RoomSnapshot(BaseModel):
-    id: str
-    name: str
-    member_count: int
-    max_members: int
-    collective_minutes: int
-    own_minutes: int
-    milestone_target_minutes: int
-    members: list[Member]
-    track: Track
-    stitches: list[Stitch]
-
-
-class FocusSession(BaseModel):
-    id: str
-    user_id: str
-    started_at: datetime
-    stopped_at: datetime | None = None
-    duration_minutes: int | None = None
-
+class Join(BaseModel):
+    name: str = Field(default='同行者', min_length=1, max_length=20)
 
 class StitchCreate(BaseModel):
     content: str = Field(min_length=1, max_length=180)
 
+class MusicSkip(BaseModel):
+    direction: Literal['previous', 'next']
+    revision: int = Field(ge=0)
 
-MEMBERS: dict[str, Member] = {
-    "member-rain": Member(id="member-rain", name="小雨", initials="雨", color="#ef7f5a", active=True, active_minutes=42),
-    "member-he": Member(id="member-he", name="阿禾", initials="禾", color="#5f8e7d", active=True, active_minutes=18),
-    "member-lin": Member(id="member-lin", name="Lin", initials="L", color="#7789b5", active=True, active_minutes=60),
-    "member-you": Member(id="member-you", name="你", initials="你", color="#b07d9f"),
-}
-MEMBER_TOTALS = {"member-rain": 520, "member-he": 460, "member-lin": 720, "member-you": 268}
-TRACK = Track(
-    title="夜空中最亮的星", artist="逃跑计划", album="世界", duration_seconds=284,
-    position_seconds=136, playing=True, white_noise="雨声", white_noise_volume=30,
-    next_dj="Lin", skip_votes=2, votes_needed=5,
-)
-STITCHES: list[Stitch] = [
-    Stitch(id="stitch-1", author_id="member-he", author="阿禾", initials="禾", color="#5f8e7d", content="图书馆今晚很安静，适合把最后两章收尾。", created_at=datetime(2026, 9, 14, 21, 6, tzinfo=CHINA_TIMEZONE)),
-    Stitch(id="stitch-2", author_id="member-rain", author="小雨", initials="雨", color="#ef7f5a", content="刚做完一套题，先休息十分钟。你们也加油 🧵", created_at=datetime(2026, 9, 14, 20, 42, tzinfo=CHINA_TIMEZONE)),
-]
-FOCUS_SESSIONS: dict[str, FocusSession] = {}
-STATE_LOCK = Lock()
+def member(db, token):
+    user = db.execute('SELECT * FROM users WHERE token=?', (token,)).fetchone()
+    if user is None:
+        raise HTTPException(401, '访客身份已失效，请重新连接')
+    return user
 
+def session_json(row):
+    return {**dict(row), 'started_at': datetime.fromtimestamp(row['started_at'], timezone.utc).isoformat(), 'stopped_at': datetime.fromtimestamp(row['stopped_at'], timezone.utc).isoformat() if row['stopped_at'] else None}
 
-def get_member(user_id: str) -> Member:
-    member = MEMBERS.get(user_id)
-    if member is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="邀请码成员身份无效")
-    return member
+def tracks():
+    result = []
+    for path in sorted(MEDIA.rglob('*')):
+        if not path.is_file() or path.suffix.lower() not in {'.mp3', '.flac', '.ogg', '.wav', '.m4a', '.aac'}:
+            continue
+        if not path.resolve().is_relative_to(MEDIA.resolve()):
+            continue
+        title, separator, artist = path.stem.rpartition(' - ')
+        subtitle = next((p for p in path.parent.iterdir() if p.stem == path.stem and p.suffix.lower() == '.lrc'), None)
+        stat = path.stat()
+        seconds = music.duration(str(path), stat.st_mtime_ns, stat.st_size)
+        result.append({'id': path.relative_to(MEDIA).as_posix(), 'title': title if separator else path.stem, 'artist': artist if separator else '未知艺术家', 'album': '营地音乐库', 'audio_url': '/static/' + quote(path.relative_to(MEDIA).as_posix()), 'lyrics_url': '/static/' + quote(subtitle.relative_to(MEDIA).as_posix()) if subtitle else None, 'duration_seconds': seconds, 'position_seconds': 0, 'playing': False, 'white_noise': None, 'white_noise_volume': 0, 'next_dj': '', 'skip_votes': 0, 'votes_needed': 0})
+    return result
 
+@app.get('/api/health')
+def health():
+    with database() as db:
+        db.execute('SELECT 1')
+    return {'status': 'ok'}
 
-@app.get("/api/health")
-async def health() -> dict[str, str]:
-    return {"status": "ok"}
+@app.post('/api/users/join', status_code=201)
+def join(payload: Join):
+    name = payload.name.strip()
+    if not name:
+        raise HTTPException(422, '昵称不能为空')
+    identity, token = str(uuid4()), str(uuid4()) + str(uuid4())
+    with database() as db:
+        db.execute('INSERT INTO users(id,token,name,color,last_seen) VALUES (?,?,?,?,?)', (identity, token, name, '#5f8e7d', time.time()))
+    return {'id': identity, 'token': token, 'name': name}
 
+@app.get('/api/tracks')
+def library():
+    return tracks()
 
-@app.get("/api/rooms/current", response_model=RoomSnapshot)
-async def current_room(x_user_id: UserId = "member-you") -> RoomSnapshot:
-    get_member(x_user_id)
-    # Privacy boundary: totals for other individual members never leave this endpoint.
-    return RoomSnapshot(
-        id=ROOM_ID, name="晚风自习室", member_count=len(MEMBERS), max_members=MAX_ROOM_MEMBERS,
-        collective_minutes=sum(MEMBER_TOTALS.values()), own_minutes=MEMBER_TOTALS[x_user_id],
-        milestone_target_minutes=2100, members=list(MEMBERS.values()), track=TRACK, stitches=STITCHES,
-    )
+@app.get('/api/music/current')
+def current_music(x_user_id: str = Header(default='', alias='X-User-Id')):
+    playlist = tracks()
+    with database() as db:
+        member(db, x_user_id)
+        return music.snapshot(db, playlist)
 
+@app.post('/api/music/skip')
+def skip_music(payload: MusicSkip, x_user_id: str = Header(default='', alias='X-User-Id')):
+    playlist = tracks()
+    with database() as db:
+        member(db, x_user_id)
+        return music.snapshot(db, playlist, payload.direction, payload.revision)
 
-@app.post("/api/focus/start", response_model=FocusSession, status_code=status.HTTP_201_CREATED)
-async def start_focus(x_user_id: UserId = "member-you") -> FocusSession:
-    member = get_member(x_user_id)
-    with STATE_LOCK:
-        active = next((session for session in FOCUS_SESSIONS.values() if session.user_id == x_user_id and session.stopped_at is None), None)
-        if active:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="已有进行中的编织")
-        session = FocusSession(id=str(uuid4()), user_id=x_user_id, started_at=datetime.now(timezone.utc))
-        FOCUS_SESSIONS[session.id] = session
-        member.active = True
-        member.active_minutes = 0
-        return session
+@app.get('/api/rooms/current')
+def room(x_user_id: str = Header(default='', alias='X-User-Id')):
+    now = time.time()
+    with database() as db:
+        own = member(db, x_user_id)
+        db.execute('UPDATE users SET last_seen=? WHERE id=?', (now, own['id']))
+        online = db.execute('SELECT u.*, f.started_at FROM users u LEFT JOIN focus_sessions f ON f.user_id=u.id AND f.stopped_at IS NULL WHERE u.last_seen>? ORDER BY u.id', (now - ONLINE_SECONDS,)).fetchall()
+        totals = db.execute('SELECT COALESCE(SUM(duration_minutes),0) FROM focus_sessions').fetchone()[0]
+        own_total = db.execute('SELECT COALESCE(SUM(duration_minutes),0) FROM focus_sessions WHERE user_id=?', (own['id'],)).fetchone()[0]
+        active = db.execute('SELECT * FROM focus_sessions WHERE user_id=? AND stopped_at IS NULL', (own['id'],)).fetchone()
+        messages = db.execute('SELECT s.*,u.name,u.color FROM stitches s JOIN users u ON u.id=s.user_id ORDER BY created_at DESC LIMIT 100').fetchall()
+    with database() as db:
+        shared_track = music.snapshot(db, tracks())['track']
+    return {'id': 'evening-breeze', 'name': '晚风自习室', 'member_count': len(online), 'max_members': 0, 'collective_minutes': totals, 'own_minutes': own_total, 'milestone_target_minutes': 2100, 'members': [{'id': u['id'], 'name': u['name'], 'initials': u['name'][0], 'color': u['color'], 'active': u['started_at'] is not None, 'active_minutes': int((now-u['started_at'])/60) if u['started_at'] else 0} for u in online], 'track': shared_track, 'active_session': session_json(active) if active else None, 'stitches': [{'id': s['id'], 'author_id': s['user_id'], 'author': s['name'], 'initials': s['name'][0], 'color': s['color'], 'content': s['content'], 'created_at': datetime.fromtimestamp(s['created_at'], timezone.utc).isoformat()} for s in messages]}
 
+@app.post('/api/presence/leave')
+def leave(x_user_id: str = Header(default='', alias='X-User-Id')):
+    with database() as db:
+        own = member(db, x_user_id)
+        db.execute('UPDATE users SET last_seen=0 WHERE id=?', (own['id'],))
+    return {'ok': True}
 
-@app.post("/api/focus/{session_id}/stop", response_model=FocusSession)
-async def stop_focus(session_id: str, x_user_id: UserId = "member-you") -> FocusSession:
-    member = get_member(x_user_id)
-    with STATE_LOCK:
-        session = FOCUS_SESSIONS.get(session_id)
-        if session is None or session.user_id != x_user_id:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="未找到这次编织")
-        if session.stopped_at is not None:
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="这次编织已经结束")
-        stopped_at = datetime.now(timezone.utc)
-        seconds = max(0, int((stopped_at - session.started_at).total_seconds()))
-        duration_minutes = max(1, (seconds + 59) // 60)
-        session.stopped_at = stopped_at
-        session.duration_minutes = duration_minutes
-        MEMBER_TOTALS[x_user_id] += duration_minutes
-        member.active = False
-        member.active_minutes = 0
-        return session
+@app.post('/api/focus/start', status_code=201)
+def start_focus(x_user_id: str = Header(default='', alias='X-User-Id')):
+    with database() as db:
+        own = member(db, x_user_id)
+        identity = str(uuid4())
+        try:
+            db.execute('INSERT INTO focus_sessions(id,user_id,started_at) VALUES (?,?,?)', (identity, own['id'], time.time()))
+        except sqlite3.IntegrityError:
+            raise HTTPException(409, '已有进行中的专注，请重新连接恢复')
+        return session_json(db.execute('SELECT * FROM focus_sessions WHERE id=?', (identity,)).fetchone())
 
+@app.post('/api/focus/{session_id}/stop')
+def stop_focus(session_id: str, x_user_id: str = Header(default='', alias='X-User-Id')):
+    with database() as db:
+        own = member(db, x_user_id)
+        row = db.execute('SELECT * FROM focus_sessions WHERE id=? AND user_id=?', (session_id, own['id'])).fetchone()
+        if row is None:
+            raise HTTPException(404, '未找到这次专注')
+        if row['stopped_at'] is None:
+            now = time.time()
+            db.execute('UPDATE focus_sessions SET stopped_at=?,duration_minutes=? WHERE id=? AND stopped_at IS NULL', (now, max(0, int((now-row['started_at']) // 60)), session_id))
+        return session_json(db.execute('SELECT * FROM focus_sessions WHERE id=?', (session_id,)).fetchone())
 
-@app.post("/api/stitches", response_model=Stitch, status_code=status.HTTP_201_CREATED)
-async def create_stitch(payload: StitchCreate, x_user_id: UserId = "member-you") -> Stitch:
-    member = get_member(x_user_id)
-    stitch = Stitch(
-        id=str(uuid4()), author_id=member.id, author=member.name, initials=member.initials,
-        color=member.color, content=payload.content.strip(), created_at=datetime.now(timezone.utc),
-    )
-    if not stitch.content:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="针脚内容不能为空")
-    with STATE_LOCK:
-        STITCHES.insert(0, stitch)
-    return stitch
+@app.post('/api/stitches', status_code=201)
+def create_stitch(payload: StitchCreate, x_user_id: str = Header(default='', alias='X-User-Id')):
+    content = payload.content.strip()
+    if not content:
+        raise HTTPException(422, '留言不能为空')
+    with database() as db:
+        own = member(db, x_user_id)
+        identity, now = str(uuid4()), time.time()
+        db.execute('INSERT INTO stitches VALUES (?,?,?,?)', (identity, own['id'], content, now))
+        return {'id': identity, 'author_id': own['id'], 'author': own['name'], 'initials': own['name'][0], 'color': own['color'], 'content': content, 'created_at': datetime.fromtimestamp(now, timezone.utc).isoformat()}
+
+# Build the Vue app before starting production; API and media keep their own routes.
+DIST = BASE.parent / 'frontend' / 'dist'
+if DIST.is_dir():
+    app.mount('/', StaticFiles(directory=DIST, html=True), name='frontend')
