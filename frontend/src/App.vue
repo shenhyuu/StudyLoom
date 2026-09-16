@@ -4,6 +4,8 @@ import PixelIcon from './components/PixelIcon.vue'
 import RoomRadio from './components/RoomRadio.vue'
 import MinecraftWorld from './components/MinecraftWorld.vue'
 import MinecraftItem from './components/MinecraftItem.vue'
+import MinecraftCrafting from './components/MinecraftCrafting.vue'
+import MinecraftProgress from './components/MinecraftProgress.vue'
 import './assets/minecraft.css'
 import TerrariaWorld from './components/TerrariaWorld.vue'
 import TerrariaSprite from './components/TerrariaSprite.vue'
@@ -29,6 +31,22 @@ const message = ref('')
 const connectionNote = ref('')
 const theme = ref<Theme>(localStorage.getItem('studyloom-theme') === 'terraria' ? 'terraria' : 'minecraft')
 const journalOpen = ref(true)
+const recipeStorageKey = `studyloom-recipes-${identity.id}`
+function nextRecipeIndex() {
+  const stored = Number(localStorage.getItem(recipeStorageKey) ?? 0)
+  return Number.isSafeInteger(stored) && stored >= 0 ? stored : 0
+}
+const recipeIndex = ref(nextRecipeIndex())
+function syncRecipe(sessionId: string | null) {
+  if (!sessionId) { recipeIndex.value = nextRecipeIndex(); return }
+  const key = `${recipeStorageKey}-${sessionId}`
+  const stored = localStorage.getItem(key)
+  const value = stored === null ? NaN : Number(stored)
+  if (Number.isSafeInteger(value) && value >= 0) { recipeIndex.value = value; return }
+  recipeIndex.value = nextRecipeIndex()
+  localStorage.setItem(key, String(recipeIndex.value))
+  localStorage.setItem(recipeStorageKey, String(recipeIndex.value + 1))
+}
 // Boss 顺序与分组参考 Terraria Wiki（https://wiki.biligame.com/tr/Boss），完整收录：
 // 困难模式之前：史莱姆王 → 克苏鲁之眼 → 世界吞噬怪 → 克苏鲁之脑 → 蜂王 → 独眼巨鹿 → 骷髅王 → 血肉墙；
 // 困难模式：史莱姆皇后 → 双子魔眼 → 毁灭者 → 机械骷髅王 → 世纪之花 → 石巨人 → 猪龙鱼公爵 → 光之女皇 → 拜月教邪教徒 → 月亮领主。
@@ -132,6 +150,7 @@ async function loadRoom() {
     milestoneTargetMinutes.value = room.milestone_target_minutes
     members.value = room.members
     activeSessionId.value = room.active_session?.id ?? null
+    syncRecipe(activeSessionId.value)
     isFocusing.value = !!room.active_session
     focusStartedAt = room.active_session ? Date.parse(room.active_session.started_at) : 0
     elapsedSeconds.value = focusStartedAt ? Math.max(0, Math.floor((Date.now() - focusStartedAt) / 1000)) : 0
@@ -153,6 +172,7 @@ async function toggleFocus() {
     if (!isFocusing.value) {
       const session = await studyLoomApi.startFocus()
       activeSessionId.value = session.id
+      syncRecipe(session.id)
       isFocusing.value = true
       focusStartedAt = Date.parse(session.started_at)
       await loadRoom()
@@ -161,6 +181,7 @@ async function toggleFocus() {
       collectiveMinutes.value += session.duration_minutes ?? 0
       isFocusing.value = false
       activeSessionId.value = null
+      syncRecipe(null)
       focusStartedAt = 0
       elapsedSeconds.value = 0
       await loadRoom()
@@ -221,23 +242,22 @@ onBeforeUnmount(() => {
       <div class="dashboard">
         <section class="progress-panel panel" aria-labelledby="progress-title">
           <div class="panel-heading"><div><TerrariaSprite v-if="theme === 'terraria'" name="Work_Bench"/><MinecraftItem v-else name="diamond"/><h2 id="progress-title">{{ theme === 'terraria' ? '世界建造进度' : '进度 · 我们的主世界' }}</h2></div><span>集体专注</span></div>
-          <div class="progress-content"><p class="muted">{{ theme === 'terraria' ? '从史莱姆王，一路挑战到月亮领主' : '将专注积累成经验，解锁村庄的新篇章' }}</p><div class="time-total"><strong>{{ collectiveHours }}</strong><span>小时</span><strong>{{ collectiveRemainder }}</strong><span>分钟</span></div>
-            <div class="milestone-label"><span><PixelIcon kind="star"/>下一座里程碑</span><b>{{ Math.round(milestoneProgress) }}%</b></div>
-            <div class="xp-bar" role="progressbar" aria-label="集体专注里程碑进度" :aria-valuenow="Math.round(milestoneProgress)" :aria-valuemin="0" :aria-valuemax="100"><span :style="{ width: milestoneProgress + '%' }"></span></div>
-            <p class="milestone-note"><template v-if="theme === 'terraria' && nextBoss">再一起专注 <b>{{ nextMilestoneLabel }}</b>，唤醒 <b>{{ nextBoss.name }}</b>！</template><template v-else-if="theme === 'terraria'">月亮领主已被战胜，这片泰拉大陆由你们守护。</template><template v-else>再一起专注 <b>{{ nextMilestoneLabel }}</b>，解锁进度「更上一层楼」。</template></p>
+          <div class="progress-content"><p class="muted">{{ theme === 'terraria' ? '从史莱姆王，一路挑战到月亮领主' : '从第一张工作台，到属于我们的图书馆' }}</p><div class="time-total"><strong>{{ collectiveHours }}</strong><span>小时</span><strong>{{ collectiveRemainder }}</strong><span>分钟</span></div>
+            <MinecraftProgress v-if="theme === 'minecraft'" :minutes="collectiveMinutes"/>
+            <div v-if="theme === 'terraria'" class="milestone-label"><span><PixelIcon kind="star"/>下一座里程碑</span><b>{{ Math.round(milestoneProgress) }}%</b></div>
+            <div v-if="theme === 'terraria'" class="xp-bar" role="progressbar" aria-label="集体专注里程碑进度" :aria-valuenow="Math.round(milestoneProgress)" :aria-valuemin="0" :aria-valuemax="100"><span :style="{ width: milestoneProgress + '%' }"></span></div>
+            <p v-if="theme === 'terraria'" class="milestone-note"><template v-if="theme === 'terraria' && nextBoss">再一起专注 <b>{{ nextMilestoneLabel }}</b>，唤醒 <b>{{ nextBoss.name }}</b>！</template><template v-else-if="theme === 'terraria'">月亮领主已被战胜，这片泰拉大陆由你们守护。</template></p>
             <div v-if="theme === 'terraria'" ref="bossTrackEl" class="achievement-shelf boss-track"><div v-for="(boss, index) in bossMilestones" :key="boss.sprite" class="boss-card" :class="bossCardClass(index)" :style="bossProgressStyle(index)"><span class="boss-icon"><span class="boss-icon-inner"><TerrariaSprite :name="boss.sprite" :label="boss.name"/></span></span><span>{{ boss.name }}</span><small>{{ boss.minutes / 60 }} 小时</small></div></div>
-            <div v-else class="mc-advancements"><div class="mc-advancement" :class="{ unlocked: collectiveMinutes >= 600 }"><span><MinecraftItem name="crafting_table_front"/></span><b>开拓者</b><small>10 小时 · 放下第一块</small></div><div class="mc-advancement" :class="{ unlocked: collectiveMinutes >= 1500 }"><span><MinecraftItem name="book"/></span><b>知识就是力量</b><small>25 小时 · 建起图书馆</small></div><div class="mc-advancement" :class="{ unlocked: collectiveMinutes >= milestoneTargetMinutes }"><span><MinecraftItem name="diamond"/></span><b>更上一层楼</b><small>{{ Math.round(milestoneTargetMinutes / 60) }} 小时 · 新篇章</small></div></div>
           </div>
         </section>
-        <section class="focus-panel panel" aria-labelledby="focus-title"><div class="panel-heading"><div><TerrariaSprite v-if="theme === 'terraria'" name="Campfire"/><MinecraftItem v-else name="crafting_table_front"/><h2 id="focus-title">{{ theme === 'minecraft' ? '你的工作台' : '篝火旁的时光' }}</h2></div><span>{{ isFocusing ? '专注进行中' : '准备就绪' }}</span></div>
-          <div class="focus-content"><div v-if="theme === 'minecraft'" class="mc-crafting" aria-label="装饰性合成界面：把时间变成经验"><div class="mc-crafting-grid"><span v-for="slot in 9" :key="slot" class="mc-slot"><MinecraftItem v-if="[2, 5, 8].includes(slot)" :name="slot === 8 ? 'book' : 'diamond'"/></span></div><span aria-hidden="true">➜</span><span class="mc-slot mc-crafting-output"><MinecraftItem name="diamond_pickaxe"/></span></div><div v-if="theme === 'terraria'" class="tr-focus-buff"><TerrariaSprite name="Campfire"/><span>温暖篝火<small>{{ isFocusing ? '专注进行中' : '在这里，安心做自己的事' }}</small></span></div><p class="eyebrow">{{ isFocusing ? 'ONE MINUTE AT A TIME' : 'MAKE ROOM FOR A LITTLE FOCUS' }}</p><div class="timer" role="timer" aria-label="本次专注时长">{{ timerLabel }}</div><p>{{ isFocusing ? '安静地做自己的事，我们都在这里。' : '不必急着抵达，先从这一分钟开始。' }}</p><button class="focus-button" :disabled="isSaving" @click="toggleFocus"><TerrariaSprite v-if="theme === 'terraria'" :name="isFocusing ? 'Gold_Chest' : 'Copper_Pickaxe'"/><MinecraftItem v-else :name="isFocusing ? 'emerald' : 'diamond_pickaxe'"/>{{ isSaving ? '正在保存…' : isFocusing ? '结束专注 · 保存时光' : '开始专注' }}<span>{{ isFocusing ? '■' : '▶' }}</span></button><small>专注时，留言会暂时收起</small></div>
+        <section class="focus-panel panel" aria-labelledby="focus-title"><div class="panel-heading"><div><TerrariaSprite v-if="theme === 'terraria'" name="Campfire"/><MinecraftItem v-else name="crafting_table"/><h2 id="focus-title">{{ theme === 'minecraft' ? '你的工作台' : '篝火旁的时光' }}</h2></div><span>{{ isFocusing ? '专注进行中' : '准备就绪' }}</span></div>
+          <div class="focus-content"><MinecraftCrafting v-if="theme === 'minecraft'" :recipe-index="recipeIndex" :focusing="isFocusing"/><div v-if="theme === 'terraria'" class="tr-focus-buff"><TerrariaSprite name="Campfire"/><span>温暖篝火<small>{{ isFocusing ? '专注进行中' : '在这里，安心做自己的事' }}</small></span></div><p class="eyebrow">{{ isFocusing ? 'ONE MINUTE AT A TIME' : 'MAKE ROOM FOR A LITTLE FOCUS' }}</p><div class="timer" role="timer" aria-label="本次专注时长">{{ timerLabel }}</div><p>{{ isFocusing ? '安静地做自己的事，我们都在这里。' : '不必急着抵达，先从这一分钟开始。' }}</p><button class="focus-button" :disabled="isSaving" @click="toggleFocus"><TerrariaSprite v-if="theme === 'terraria'" :name="isFocusing ? 'Gold_Chest' : 'Copper_Pickaxe'"/><MinecraftItem v-else :name="isFocusing ? 'emerald' : 'diamond_pickaxe'"/>{{ isSaving ? '正在保存…' : isFocusing ? '结束专注 · 保存时光' : '开始专注' }}<span>{{ isFocusing ? '■' : '▶' }}</span></button><small>专注时，留言会暂时收起</small></div>
         </section>
         <RoomRadio :theme="theme"/>
       </div>
       <section id="companions" class="companions panel" aria-labelledby="companions-title"><div class="panel-heading"><div><PixelIcon :kind="theme === 'minecraft' ? 'heart' : 'life'"/><h2 id="companions-title">{{ theme === 'terraria' ? '城镇居民 · 同行的冒险者' : '同一片世界里的伙伴' }}</h2></div><span>{{ memberCount }} 人在线</span></div><div class="member-list"><p v-if="!members.length" class="muted">正在连接同行的伙伴…</p><article v-for="member in focusMembers" :key="member.id" class="member" :class="{ 'is-active': member.active }"><div class="portrait" :style="{ '--avatar-color': member.color }"><svg v-if="theme === 'terraria'" class="tr-player" viewBox="0 0 16 24" aria-hidden="true" shape-rendering="crispEdges"><path fill="#18213b" d="M4 1h8v3h2v7h-2v2h2v7h-2v4H8v-3H7v3H3v-5H1v-6h3z"/><path fill="#a07651" d="M4 2h7v2h2v3H3V4h1z"/><path fill="#edbf90" d="M4 6h8v5H4zM2 14h2v5H2zm10 0h2v5h-2z"/><path fill="#f8dab0" d="M6 6h6v3H6z"/><path fill="#263145" d="M10 7h2v2h-2z"/><path fill="var(--avatar-color)" d="M4 12h8v7H4z"/><path fill="#6782a5" d="M4 19h3v3H4zm5 0h3v3H9z"/><path fill="#b5d1de" opacity=".5" d="M4 13h2v5H4z"/></svg><span v-else class="pixel-face"><i></i></span><span class="member-presence"></span></div><div><strong>{{ member.name }} <small v-if="member.id === identity.id">YOU</small></strong><p>{{ memberStatus(member) }}</p></div><PixelIcon v-if="member.active" :kind="theme === 'minecraft' ? 'pickaxe' : 'star'"/></article></div></section>
       <section id="journal" class="journal panel" aria-labelledby="journal-title"><div class="panel-heading"><div><PixelIcon kind="book"/><h2 id="journal-title">营地留言簿</h2><span class="journal-subtitle">休息一下，再继续出发</span></div><button :aria-expanded="journalOpen" aria-controls="journal-content" @click="journalOpen = !journalOpen">{{ journalOpen ? '收起 −' : '展开 +' }}</button></div><div v-if="journalOpen" id="journal-content"><div v-if="isFocusing" class="folded-stitches"><PixelIcon kind="book"/>{{ stitches.length }} 条留言在这里等你，休息时再来看。</div><div v-else class="journal-body"><div class="stitch-list" aria-live="polite"><article v-for="stitch in stitches" :key="stitch.id" class="stitch"><span class="initial-avatar" :style="{ '--avatar-color': stitch.color }">{{ stitch.initials }}</span><div><div class="stitch-meta"><strong>{{ stitch.author }}</strong><time>{{ stitchTime(stitch.created_at) }}</time></div><p>{{ stitch.content }}</p></div></article><p v-if="!stitches.length" class="muted">这里还很安静，留下第一条留言吧。</p></div><form class="message-form" @submit.prevent="sendStitch"><label for="stitch-message">留句话，给同行的伙伴</label><textarea id="stitch-message" v-model="message" maxlength="180" placeholder="今天也有好好努力。" rows="3"></textarea><div><span>{{ message.length }} / 180</span><button :disabled="!message.trim() || isSaving">留下留言 ↗</button></div></form></div></div></section>
       <details v-if="theme === 'terraria'" class="tr-credits"><summary>关于这片泰拉世界 · 灵感与素材</summary><p>致敬 Terraria / Re-Logic。NPC、物品与 Boss 精灵取自 Terraria Wiki 并保存在本地；场景为原创 SVG，学习对话为原创改写。星星收藏在离开主题或刷新后重置，晶塔用于切换主题风景。</p><a href="https://terraria.wiki.gg/wiki/Guide" target="_blank" rel="noreferrer">NPC · 向导 ↗</a><a href="https://terraria.wiki.gg/wiki/Inventory" target="_blank" rel="noreferrer">物品栏 ↗</a><a href="https://terraria.wiki.gg/wiki/Biomes" target="_blank" rel="noreferrer">生态环境 ↗</a><a href="https://terraria.huijiwiki.com/wiki/首页" target="_blank" rel="noreferrer">灰机 Wiki ↗</a><a href="https://terraria.fandom.com/wiki/Terraria_Wiki" target="_blank" rel="noreferrer">Fandom Wiki ↗</a></details>
-      <details v-if="theme === 'minecraft'" class="mc-credits"><summary>世界档案 · 灵感与素材</summary><p>致敬 Minecraft / Mojang Studios。九格快捷栏、经验条、工作台与村民职业参考中文 Minecraft Wiki；村庄场景及生物插画为原创 SVG。方块与物品贴图为 Minecraft 游戏素材，本地保存，来源记录见项目素材清单。本项目为非官方学习主题。</p><p>这里的经验等级、进度名称与村民对话是自习主题的创意改编；快捷栏切换风景，访客发现会在离开主题后重置。</p><a href="https://zh.minecraft.wiki/" target="_blank" rel="noreferrer">中文 Minecraft Wiki ↗</a><a href="https://zh.minecraft.wiki/w/平视显示器" target="_blank" rel="noreferrer">平视显示器 ↗</a><a href="https://zh.minecraft.wiki/w/村民" target="_blank" rel="noreferrer">村民与职业 ↗</a><a href="https://zh.minecraft.wiki/w/生物群系" target="_blank" rel="noreferrer">生物群系 ↗</a></details>
       <footer><span><PixelIcon :kind="theme === 'minecraft' ? 'grass' : 'tree'"/>StudyLoom · 小小世界，慢慢生长</span><span>不比较进度，只分享陪伴。</span></footer>
     </main>
   </div>

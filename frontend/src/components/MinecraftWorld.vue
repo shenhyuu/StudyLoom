@@ -11,7 +11,7 @@ const dialogue = ref('嗯哼。欢迎来到自习村庄！把今天的任务拆�
 const discoveries = ref<string[]>([])
 const biomes = ['平原', '樱花树林', '针叶林']
 const tools = [
-  { item: 'diamond_pickaxe', label: '工作台', action: 'focus' },
+  { item: 'crafting_table', label: '工作台', action: 'focus' },
   { item: 'book', label: '留言簿', action: 'journal' },
   { item: 'emerald', label: '图书管理员', action: 'villager' },
   { item: 'compass', label: '切换群系', action: 'biome' },
@@ -55,8 +55,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown))
     <div class="mc-scene">
       <svg viewBox="0 0 1200 480" preserveAspectRatio="xMidYMid slice" class="mc-landscape" shape-rendering="crispEdges" role="img" :aria-label="`${biomes[biome]}中的方块村庄，橡木小屋、农田、树木与远山`">
         <defs>
-          <pattern v-for="texture in ['oak_planks','cobblestone','dirt','oak_log','bookshelf']" :id="`mc-${texture}`" :key="texture" width="32" height="32" patternUnits="userSpaceOnUse"><image :href="`/minecraft/${texture}.png`" width="32" height="32" /></pattern>
-          <pattern id="mc-leaves" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" class="mc-leaf-base"/><image :class="{ 'mc-tinted-leaves': biome !== 1 }" :href="`/minecraft/${biome === 1 ? 'cherry_leaves' : 'oak_leaves'}.png`" width="32" height="32" /></pattern>
+          <pattern v-for="texture in ['oak_planks','cobblestone','dirt','oak_log','bookshelf']" :id="`mc-${texture}`" :key="texture" width="32" height="32" patternUnits="userSpaceOnUse"><image :href="`/minecraft/${biome === 2 && ['oak_planks', 'oak_log'].includes(texture) ? texture.replace('oak', 'spruce') : texture}.png`" width="32" height="32" /></pattern>
+          <pattern id="mc-leaves" width="32" height="32" patternUnits="userSpaceOnUse"><rect width="32" height="32" class="mc-leaf-base"/><image :class="{ 'mc-tinted-leaves': biome !== 1 }" :href="`/minecraft/${biome === 1 ? 'cherry_leaves' : biome === 2 ? 'spruce_leaves' : 'oak_leaves'}.png`" width="32" height="32" /></pattern>
         </defs>
         <rect width="1200" height="480" class="mc-sky"/>
         <g class="mc-stars" fill="#fff6d0"><path d="M80 42h4v4h-4zM420 26h4v4h-4zM710 72h4v4h-4zM980 30h4v4h-4zM1120 110h4v4h-4zM580 99h4v4h-4zM920 98h4v4h-4z"/></g>
@@ -68,6 +68,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown))
         <path fill="url(#mc-dirt)" d="M0 442h1200v38H0z"/><path fill="#609334" d="M0 434h1200v12H0z"/>
         <path fill="#bda16c" d="M700 346h82v38h100v34h210v16H774v-31h-88v-25h-60v-22h74z"/>
         <g v-for="(tree, i) in [{x:55,y:243},{x:380,y:255},{x:1010,y:209},{x:1110,y:268}]" :key="i" :transform="`translate(${tree.x} ${tree.y})`"><rect x="40" y="45" width="24" height="110" fill="url(#mc-oak_log)"/><path fill="url(#mc-leaves)" :d="biome === 2 ? 'M32 0h40v24h16v24h16v24h16v24H-8V72H8V48h16V24h8z' : 'M8 0h88v24h24v60H-16V24H8z'"/><path fill="#000" opacity=".12" d="M-16 68h136v16H-16z"/></g>
+        <!-- A second cottage and sheltered reading terrace give the village a shared courtyard. -->
+        <g transform="translate(238 263)">
+          <path fill="#574538" d="M-16 32h16V16h24V0h112v16h24v16h16v16H-16z"/>
+          <rect y="48" width="160" height="100" fill="url(#mc-oak_planks)"/><rect y="125" width="160" height="23" fill="url(#mc-cobblestone)"/>
+          <path fill="#3d3428" d="M65 81h30v67H65z"/><path fill="#c4e8eb" d="M20 69h30v34H20zm90 0h30v34h-30z"/>
+          <path stroke="#eff6dd" stroke-width="3" d="M35 69v34m-15-17h30m75-17v34m-15-17h30"/>
+          <rect x="104" y="110" width="40" height="17" fill="url(#mc-bookshelf)"/>
+        </g>
+        <path fill="#d0b482" d="M324 411h70v15h240v-25h61v33H324z"/>
+        <g transform="translate(448 310)">
+          <path fill="#6b5138" d="M-12 16h12V0h104v16h12v12H-12z"/><rect y="28" width="8" height="93" fill="url(#mc-oak_log)"/><rect x="96" y="28" width="8" height="93" fill="url(#mc-oak_log)"/>
+          <rect x="13" y="76" width="78" height="24" fill="url(#mc-bookshelf)"/><rect x="26" y="103" width="55" height="7" fill="url(#mc-oak_planks)"/><path fill="#624931" d="M29 110h6v15h-6zm43 0h6v15h-6z"/>
+          <rect x="49" y="31" width="8" height="18" fill="#544431"/><rect x="44" y="43" width="18" height="20" fill="#ffe6a1" class="mc-torch-glow"/>
+        </g>
         <g transform="translate(600 187)">
           <path fill="#473528" d="M-32 62h32V42h32V22h32V2h120v20h32v20h32v20h32v24H-32z"/>
           <path fill="url(#mc-oak_planks)" d="M0 72h248v132H0z"/><path fill="url(#mc-cobblestone)" d="M0 174h248v30H0zM0 72h24v132H0zm224 0h24v132h-24z"/>
@@ -78,11 +92,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', keydown))
           <rect x="80" y="113" width="5" height="19" fill="#6f4429"/><rect x="78" y="105" width="9" height="10" fill="#ffc755" class="mc-torch-glow"/>
         </g>
         <g transform="translate(912 364)"><path fill="#68462c" d="M0 0h170v48H0z"/><path stroke="#d3b550" stroke-width="6" d="M8 8v27m15-27v27m15-27v27m15-27v27m50-27v27m15-27v27m15-27v27m15-27v27m15-27v27"/><rect x="68" y="0" width="23" height="48" fill="#4d95bc"/></g>
-        <g fill="#e5e9d5"><path d="M468 379h42v25h-42zM474 404h7v13h-7zm24 0h7v13h-7z"/><rect x="507" y="383" width="14" height="16" fill="#b4a590"/></g>
+        <g transform="translate(54 379)"><path fill="#7caa86" d="M0 10h160v36H0z"/><path fill="#65afc6" d="M12 14h133v22H12z"/><path fill="#a4d7dc" d="M24 18h35v4H24zm74 9h34v3H98z"/><rect x="87" y="12" width="16" height="6" fill="#568345"/></g>
+        <g stroke="#816647" stroke-width="5" fill="none"><path d="M874 398h27m-24-12v29m21-29v29M1065 421h86m-77-13v24m27-24v24m29-24v24"/></g>
         <g v-for="i in 13" :key="i" :transform="`translate(${i * 87} ${420 - (i % 3) * 8})`"><path fill="#416e2e" d="M0 0h3v14H0z"/><path :fill="i % 2 ? '#edce56' : '#e9e3dc'" d="M-3-3h9v7h-9z"/></g>
       </svg>
       <div class="mc-world-copy"><p class="eyebrow">STUDYLOOM / SURVIVAL OF THE FOCUSED</p><h1 id="room-title">{{ roomName }}</h1><p>不用一次建好整个世界。<br/>今天，先放下属于你的那一块。</p><span class="mc-splash">每一分钟都是经验值！</span></div>
-      <div class="mc-debug">{{ biomes[biome] }} · {{ night || focusing ? '月光下的村庄' : '晴朗' }}<br/><span>XYZ: 128 / 64 / 37</span></div>
+      <div class="mc-debug">{{ biomes[biome] }} · {{ night || focusing ? '月光下的村庄' : '晴朗' }}</div>
+      <div class="mc-village-sign">自习村庄 · 图书馆庭院<small>沿着小径，找到属于你的安静角落</small></div>
       <button class="mc-secret" aria-label="查看树后的苦力怕" @click="meet('creeper')"><MinecraftMob kind="creeper" label="苦力怕"/></button>
       <button class="mc-villager" aria-label="与图书管理员交谈" @click="meet('villager')"><MinecraftMob label="图书管理员"/><span>图书管理员</span></button>
       <div class="mc-crosshair" aria-hidden="true">+</div>
